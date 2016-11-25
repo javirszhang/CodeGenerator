@@ -1,0 +1,33 @@
+﻿ #set($oraValue=".Value")
+ #set($refsuo=".Entities;")
+ /***************************************************
+ *
+ * Data Access Layer Of Winner Framework
+#set($c=".generate.cs")
+ * FileName : $StringUtil.ToPascalCase($Table.name)${c}
+ * CreateTime : ${Const.CurrentTime}
+ * CodeGenerateVersion : ${Const.Version}
+ * TemplateVersion: 1.0.0
+ * E_Mail : zhj.pavel@gmail.com
+ * Blog : 
+ * Copyright (C) YXH
+ * 
+ ***************************************************/
+ #set($classname=$StringUtil.ToPascalCase($Table.name))
+ namespace ${Const.Namespace}
+ {
+	public partial class ${classname}
+	{
+		#region 属性
+#foreach($col in $Table.Columns)
+		/// <summary>
+		/// $StringUtil.Inline($col.Comment)
+		/// </summary>
+		public ${col.PrimativeTypeName} $StringUtil.ToPascalCase($col.Name)
+		{
+			get;set;
+		}
+#end
+		#endregion
+	}
+ }
