@@ -120,6 +120,7 @@ namespace CodeGenerator.Core.OracleProvider
                     key = new Common.ForiegnKey();
                     key.Columns = new List<IColumn>();
                     key.ConstraintName = constraint_name;
+                    foreignes.Add(key);
                 }
                 key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
             }
@@ -157,6 +158,7 @@ namespace CodeGenerator.Core.OracleProvider
                     key = new Common.UniqueKey();
                     key.Columns = new List<IColumn>();
                     key.ConstraintName = constraint_name;
+                    uniques.Add(key);
                 }
                 key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
             }
