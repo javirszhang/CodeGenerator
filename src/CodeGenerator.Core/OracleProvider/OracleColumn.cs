@@ -64,7 +64,11 @@ namespace CodeGenerator.Core.OracleProvider
                 else if (this.CsharpType == typeof(object))
                     _PrimativeTypeName = "object";
                 else
-                    return this.CsharpType.Name;
+                    _PrimativeTypeName = this.CsharpType.Name;
+                if (this.CsharpType.IsValueType && IsNullable)
+                {
+                    _PrimativeTypeName += "?";
+                }
                 return _PrimativeTypeName;
             }
             set

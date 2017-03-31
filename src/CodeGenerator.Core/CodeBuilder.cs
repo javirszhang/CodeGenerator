@@ -41,23 +41,31 @@ namespace CodeGenerator.Core
         }
         public bool Build(string _codefilesavepath)
         {
-            DataFactory factory = DatabaseResolver.GetDataFactory(this._setting);
-            ITableSchema its = factory.GetTableSchema(_table_name);
-            string template_fullpath = GetCodeDir();
-            TemplateResolver th = new TemplateResolver(template_fullpath);
-            StringUtils util = new StringUtils();
-            th.Put("Table", its);
-            th.Put("StringUtil", util);
-            th.Put("Const", this.Constant);
+            try
+            {
+                DataFactory factory = DatabaseResolver.GetDataFactory(this._setting);
+                ITableSchema its = factory.GetTableSchema(_table_name);
+                string template_fullpath = GetCodeDir();
+                TemplateResolver th = new TemplateResolver(template_fullpath);
+                StringUtils util = new StringUtils();
+                th.Put("Table", its);
+                th.Put("StringUtil", util);
+                th.Put("Const", this.Constant);
 
-            string text = th.BuildString(Path.GetFileName(Path.Combine(template_fullpath, _template_name)));
-            if (!Directory.Exists(_codefilesavepath))
-                Directory.CreateDirectory(_codefilesavepath);
-            string fullsavefilename = _codefilesavepath + "/" + util.ToPascalCase(_table_name) + ".generate.cs";
-            if (File.Exists(fullsavefilename))
-                File.Delete(fullsavefilename);
-            File.AppendAllText(fullsavefilename, text);
-            return true;
+                string text = th.BuildString(Path.GetFileName(Path.Combine(template_fullpath, _template_name)));
+                if (!Directory.Exists(_codefilesavepath))
+                    Directory.CreateDirectory(_codefilesavepath);
+                string fullsavefilename = _codefilesavepath + "/" + util.ToPascalCase(_table_name) + ".generate.cs";
+                if (File.Exists(fullsavefilename))
+                    File.Delete(fullsavefilename);
+                File.AppendAllText(fullsavefilename, text);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                this.ExceptionMessage = ex.Message;
+                return false;
+            }
         }
         public string ExceptionMessage { get; set; }
         private string GetCodeDir()

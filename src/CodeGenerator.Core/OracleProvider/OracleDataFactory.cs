@@ -21,7 +21,10 @@ namespace CodeGenerator.Core.OracleProvider
         {
             DatabaseSchema db = new DatabaseSchema();
             db.Tables = new List<ITableSchema>();
-            string sql = "SELECT TABLE_NAME FROM USER_TABLES ORDER BY TABLE_NAME ASC";
+            string sql = @"SELECT TABLE_NAME FROM (
+SELECT TABLE_NAME FROM USER_TABLES
+UNION ALL
+SELECT VIEW_NAME FROM USER_VIEWS) TAB ORDER BY TAB.TABLE_NAME ASC";
             DbHelper helper = new DbHelper(this._connectionString);
             var data = helper.ListBySql(sql, null);
             foreach (DataRow row in data.Rows)
@@ -83,7 +86,6 @@ namespace CodeGenerator.Core.OracleProvider
                     Length = Convert.ToInt32(row["DATA_LENGTH"]),
                     Scale = scale,
                     Table = oracleTable,
-                    
                 };
                 oracleTable.Columns.Add(column);
             }
