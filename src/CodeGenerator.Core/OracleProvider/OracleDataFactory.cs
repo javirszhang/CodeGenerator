@@ -21,16 +21,17 @@ namespace CodeGenerator.Core.OracleProvider
         {
             DatabaseSchema db = new DatabaseSchema();
             db.Tables = new List<ITableSchema>();
-            string sql = @"SELECT TABLE_NAME FROM (
+            string sql = @"SELECT TAB.TABLE_NAME,UC.COMMENTS FROM (
 SELECT TABLE_NAME FROM USER_TABLES
 UNION ALL
-SELECT VIEW_NAME FROM USER_VIEWS) TAB ORDER BY TAB.TABLE_NAME ASC";
+SELECT VIEW_NAME FROM USER_VIEWS) TAB LEFT JOIN USER_TAB_COMMENTS UC ON UC.TABLE_NAME=TAB.TABLE_NAME ORDER BY TAB.TABLE_NAME ASC";
             DbHelper helper = new DbHelper(this._connectionString);
             var data = helper.ListBySql(sql, null);
             foreach (DataRow row in data.Rows)
             {
                 OracleTableSchema table = new OracleTableSchema();
                 table.Name = row["TABLE_NAME"] + string.Empty;
+                table.Comment = row["COMMENTS"] + string.Empty;
                 db.Tables.Add(table);
             }
             return db;
@@ -38,9 +39,16 @@ SELECT VIEW_NAME FROM USER_VIEWS) TAB ORDER BY TAB.TABLE_NAME ASC";
 
         public override ITableSchema GetTableSchema(string table_name)
         {
+            string sql = @"SELECT TAB.TABLE_NAME,UC.COMMENTS FROM (
+SELECT TABLE_NAME FROM USER_TABLES
+UNION ALL
+SELECT VIEW_NAME FROM USER_VIEWS) TAB LEFT JOIN USER_TAB_COMMENTS UC ON UC.TABLE_NAME=TAB.TABLE_NAME WHERE TAB.TABLE_NAME=:TABLE_NAME ORDER BY TAB.TABLE_NAME ASC";
+            DbHelper helper = new DbHelper(this._connectionString);
+            var data = helper.ListBySql(sql, new OracleParameter("TABLE_NAME", table_name));
 
             OracleTableSchema oracleTable = new OracleTableSchema();
             oracleTable.Name = table_name;
+            oracleTable.Comment = data.Rows[0]["COMMENTS"] + string.Empty;
             SetColumns(oracleTable);
             SetForeignKey(oracleTable);
             SetUniqueKey(oracleTable);
@@ -110,16 +118,16 @@ SELECT VIEW_NAME FROM USER_VIEWS) TAB ORDER BY TAB.TABLE_NAME ASC";
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql, para);
 
-            List<Common.ForiegnKey> foreignes = new List<Common.ForiegnKey>();
+            List<Common.ForeignKey> foreignes = new List<Common.ForeignKey>();
 
             foreach (DataRow row in table.Rows)
             {
                 string column_name = row["COLUMN_NAME"] + string.Empty;
                 string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
-                Common.ForiegnKey key = foreignes.Find(it => it.ConstraintName == constraint_name);
+                Common.ForeignKey key = foreignes.Find(it => it.ConstraintName == constraint_name);
                 if (key == null)
                 {
-                    key = new Common.ForiegnKey();
+                    key = new Common.ForeignKey();
                     key.Columns = new List<IColumn>();
                     key.ConstraintName = constraint_name;
                     foreignes.Add(key);

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CodeGenerator.Core.Common
 {
-    public class ForiegnKey : ConstraintKeyBase
+    public class ForeignKey : ConstraintKeyBase
     {
         public ITableSchema ForeignTable { get; set; }
     }

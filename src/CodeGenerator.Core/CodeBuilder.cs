@@ -51,7 +51,7 @@ namespace CodeGenerator.Core
                 th.Put("Table", its);
                 th.Put("StringUtil", util);
                 th.Put("Const", this.Constant);
-
+                th.Put("gTools", new Utils.gTools());
                 string text = th.BuildString(Path.GetFileName(Path.Combine(template_fullpath, _template_name)));
                 if (!Directory.Exists(_codefilesavepath))
                     Directory.CreateDirectory(_codefilesavepath);

@@ -16,7 +16,7 @@ namespace CodeGenerator.Core.OracleProvider
             set;
         }
 
-        public List<ForiegnKey> ForiegnKeys
+        public List<ForeignKey> ForiegnKeys
         {
             get;
             set;
@@ -27,7 +27,7 @@ namespace CodeGenerator.Core.OracleProvider
             get;
             set;
         }
-
+        public string Comment { get; set; }
         public PrimaryKey PrimaryKey
         {
             get;
