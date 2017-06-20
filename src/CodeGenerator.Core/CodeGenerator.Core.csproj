@@ -66,7 +66,6 @@
     <Compile Include="OracleProvider\OracleUtils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TemplateResolver.cs" />
-    <Compile Include="Utils\gTools.cs" />
     <Compile Include="Utils\StringUtils.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -1,4 +1,5 @@
-﻿using CodeGenerator.Core.Interfaces;
+﻿using CodeGenerator.Core.Common;
+using CodeGenerator.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace CodeGenerator.Core.Utils
 {
-    public class StringUtils
+    public class xUtils
     {
         public string ToPascalCase(string s)
         {
@@ -24,7 +25,27 @@ namespace CodeGenerator.Core.Utils
             t = t.TrimEnd('_');
             return t;
         }
-
+        public string ToPascalCase(string s, bool includeSplit)
+        {
+            string t = string.Empty;
+            Regex regex = new Regex("[^_]*");
+            MatchCollection mc = regex.Matches(s);
+            foreach (Match m in mc)
+            {
+                if (string.IsNullOrEmpty(m.Value))
+                    continue;
+                t += m.Value.Substring(0, 1).ToUpper() + m.Value.Substring(1, m.Value.Length - 1).ToLower();
+                if (includeSplit)
+                {
+                    t += "_";
+                }
+            }
+            if (includeSplit)
+            {
+                t = t.TrimEnd('_');
+            }
+            return t;
+        }
         public string SolveDefaultValue(string s, Type columnType, bool isNullable)
         {
             if (string.IsNullOrEmpty(s))//No Default Value
@@ -100,6 +121,25 @@ namespace CodeGenerator.Core.Utils
                 else
                     return "";
             }
+        }
+
+        public bool IsForeignKey(IColumn column, List<ForeignKey> foreignKeys)
+        {
+            if (foreignKeys == null || foreignKeys.Count <= 0 || column == null)
+            {
+                return false;
+            }
+            foreach (ForeignKey fk in foreignKeys)
+            {
+                foreach (IColumn col in fk.Columns)
+                {
+                    if (col.Name.Equals(column.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
 }

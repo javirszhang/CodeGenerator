@@ -47,11 +47,10 @@ namespace CodeGenerator.Core
                 ITableSchema its = factory.GetTableSchema(_table_name);
                 string template_fullpath = GetCodeDir();
                 TemplateResolver th = new TemplateResolver(template_fullpath);
-                StringUtils util = new StringUtils();
+                xUtils util = new xUtils();
                 th.Put("Table", its);
-                th.Put("StringUtil", util);
+                th.Put("Utils", util);
                 th.Put("Const", this.Constant);
-                th.Put("gTools", new Utils.gTools());
                 string text = th.BuildString(Path.GetFileName(Path.Combine(template_fullpath, _template_name)));
                 if (!Directory.Exists(_codefilesavepath))
                     Directory.CreateDirectory(_codefilesavepath);
