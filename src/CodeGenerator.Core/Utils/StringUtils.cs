@@ -141,5 +141,25 @@ namespace CodeGenerator.Core.Utils
             }
             return false;
         }
+
+        public object GetObjectFromArray(Array array, int index)
+        {
+            if (index >= array.Length)
+            {
+                return null;
+            }
+            return array.GetValue(index);
+        }
+
+        public string UnwrapTablePrefix(string tableName)
+        {
+            if (string.IsNullOrEmpty(tableName))
+            {
+                return tableName;
+            }
+            int index = tableName.IndexOf('_');
+            index = index < 0 ? 0 : index;
+            return tableName.Substring(index + 1);
+        }
     }
 }

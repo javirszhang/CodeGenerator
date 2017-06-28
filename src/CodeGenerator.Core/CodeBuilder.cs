@@ -52,9 +52,16 @@ namespace CodeGenerator.Core
                 th.Put("Utils", util);
                 th.Put("Const", this.Constant);
                 string text = th.BuildString(Path.GetFileName(Path.Combine(template_fullpath, _template_name)));
+                string blockComment = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*(/\*.+\n(.+\n)+?\s*\*+/)[^\0]+$", "$1");
+                var customerDefine = BlockCommentDictionary(blockComment);
+                string filename = util.ToPascalCase(_table_name) + ".generate.cs";
+                if (customerDefine.Count > 0 && customerDefine.ContainsKey("filename"))
+                {
+                    filename = customerDefine["filename"];
+                }
                 if (!Directory.Exists(_codefilesavepath))
                     Directory.CreateDirectory(_codefilesavepath);
-                string fullsavefilename = _codefilesavepath + "/" + util.ToPascalCase(_table_name) + ".generate.cs";
+                string fullsavefilename = _codefilesavepath + "/" + filename;
                 if (File.Exists(fullsavefilename))
                     File.Delete(fullsavefilename);
                 File.AppendAllText(fullsavefilename, text);
@@ -65,6 +72,34 @@ namespace CodeGenerator.Core
                 this.ExceptionMessage = ex.Message;
                 return false;
             }
+        }
+
+        private static Dictionary<string, string> BlockCommentDictionary(string blockComment)
+        {
+            var dictionary = new Dictionary<string, string>();
+            StringReader reader = new StringReader(blockComment);
+            string currentLine;
+            char whitespace = (char)0x20;
+            while ((currentLine = reader.ReadLine()) != null)
+            {
+                currentLine = currentLine.Trim().TrimStart(whitespace, '*');
+                int firstIndex = currentLine.IndexOf(':');
+                if (firstIndex < 0)
+                {
+                    continue;
+                }
+                string name = currentLine.Substring(0, firstIndex).Trim().ToLower();
+                string value = currentLine.Substring(firstIndex + 1).Trim();
+                if (dictionary.ContainsKey(name))
+                {
+                    dictionary[name] = value;
+                }
+                else
+                {
+                    dictionary.Add(name, value);
+                }
+            }
+            return dictionary;
         }
         public string ExceptionMessage { get; set; }
         private string GetCodeDir()
