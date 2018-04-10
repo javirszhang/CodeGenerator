@@ -44,5 +44,11 @@ namespace CodeGenerator.Core.OracleProvider
             }
             return csharpType;
         }
+
+        public static bool IsNumeric(string dbtype)
+        {
+            string[] numericTypes = new string[] { "DECIMAL", "INTEGER", "FLOAT", "REAL", "NUMBER" };
+            return numericTypes.Contains(dbtype.ToUpper());
+        }
     }
 }

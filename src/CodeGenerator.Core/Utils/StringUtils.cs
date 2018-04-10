@@ -56,6 +56,8 @@ namespace CodeGenerator.Core.Utils
                         return "string.Empty";
                     else if (columnType == typeof(int) || typeof(decimal) == columnType)
                         return "0";
+                    else if (columnType == typeof(DateTime))
+                        return "DateTime.Now";
                     else
                         return "DBNull.Value";
                 }

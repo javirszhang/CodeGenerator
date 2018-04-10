@@ -47,6 +47,7 @@ namespace CodeGenerator.Core.Interfaces
         /// 是否可空
         /// </summary>
         bool IsNullable { get; set; }
+        bool IsNumeric { get; set; }
         /// <summary>
         /// 列所属表
         /// </summary>

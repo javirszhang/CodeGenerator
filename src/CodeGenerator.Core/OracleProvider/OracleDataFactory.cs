@@ -94,6 +94,7 @@ SELECT VIEW_NAME FROM USER_VIEWS) TAB LEFT JOIN USER_TAB_COMMENTS UC ON UC.TABLE
                     Length = Convert.ToInt32(row["DATA_LENGTH"]),
                     Scale = scale,
                     Table = oracleTable,
+                    IsNumeric = OracleUtils.IsNumeric(data_type)
                 };
                 oracleTable.Columns.Add(column);
             }

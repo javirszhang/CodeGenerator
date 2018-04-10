@@ -88,5 +88,11 @@ namespace CodeGenerator.Core.OracleProvider
             get;
             set;
         }
+
+        public bool IsNumeric
+        {
+            get;
+            set;
+        }
     }
 }
