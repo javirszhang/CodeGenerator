@@ -8,6 +8,7 @@ namespace CodeGenerator.Core.Entities
     public enum DatabaseType
     {
         Oracle = 0,
-        Mssql = 1
+        Mssql = 1,
+        MySQL = 2
     }
 }

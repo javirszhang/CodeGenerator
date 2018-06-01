@@ -23,6 +23,9 @@ namespace CodeGenerator.Core
                     break;
                 case DatabaseType.Mssql:
                     break;
+                case DatabaseType.MySQL:
+                    factory = new MySQLProvider.MySQLDataFactory(setting.ConnectionString);
+                    break;
                 default:
                     break;
             }
@@ -33,6 +36,9 @@ namespace CodeGenerator.Core
             DbConnection conn = null;
             switch (setting.Provider)
             {
+                case DatabaseType.MySQL:
+                    conn = new MySql.Data.MySqlClient.MySqlConnection(setting.ConnectionString);
+                    break;
                 case DatabaseType.Mssql:
                     conn = new SqlConnection(setting.ConnectionString); break;
                 case DatabaseType.Oracle:
