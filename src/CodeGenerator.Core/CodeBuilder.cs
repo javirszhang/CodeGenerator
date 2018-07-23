@@ -1,6 +1,7 @@
 ﻿using CodeGenerator.Core.Common;
 using CodeGenerator.Core.Interfaces;
 using CodeGenerator.Core.Utils;
+using Javirs.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,13 +17,15 @@ namespace CodeGenerator.Core
         private string _namespace;
         private IConstant _constant;
         private string _table_name;
+        private string[] _tables;
         private Entities.ConnectionSetting _setting;
-        public CodeBuilder(string table_name, string template_name, string @namespace, Entities.ConnectionSetting setting)
+        public CodeBuilder(string[] tables, string table_name, string template_name, string @namespace, Entities.ConnectionSetting setting)
         {
             this._template_name = template_name;
             this._namespace = @namespace;
             this._table_name = table_name;
             this._setting = setting;
+            this._tables = tables;
         }
         protected IConstant Constant
         {
@@ -43,22 +46,30 @@ namespace CodeGenerator.Core
         {
             try
             {
-                DataFactory factory = DatabaseResolver.GetDataFactory(this._setting);
-                ITableSchema its = factory.GetTableSchema(_table_name);
+                List<ITableSchema> allTables = GetAllTableSchema();
+                ITableSchema currentTable = allTables.Find(it => it.Name.Equals(_table_name));
                 string template_fullpath = GetCodeDir();
+                string templatefile = Path.Combine(template_fullpath, _template_name);
                 TemplateResolver th = new TemplateResolver(template_fullpath);
                 xUtils util = new xUtils();
-                th.Put("Table", its);
+                th.Put("Tables", allTables);
+                th.Put("Table", currentTable);
                 th.Put("Utils", util);
                 th.Put("Const", this.Constant);
-                string text = th.BuildString(Path.GetFileName(Path.Combine(template_fullpath, _template_name)));
-                string blockComment = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*(/\*.+\n(.+\n)+?\s*\*+/)[^\0]+$", "$1");
-                var customerDefine = BlockCommentDictionary(blockComment);
+                if (ContainRows(templatefile))
+                {
+                    var fac = DatabaseResolver.GetDataFactory(this._setting);
+                    th.Put("Rows", fac.GetTableData(this._table_name).ToDynamic());
+                }
+                string text = th.BuildString(Path.GetFileName(templatefile));
+
+                var customerDefine = BlockCommentDictionary(text);
                 string filename = util.ToPascalCase(_table_name) + ".generate.cs";
                 if (customerDefine.Count > 0 && customerDefine.ContainsKey("filename"))
                 {
                     filename = customerDefine["filename"];
                 }
+
                 if (!Directory.Exists(_codefilesavepath))
                     Directory.CreateDirectory(_codefilesavepath);
                 string fullsavefilename = _codefilesavepath + "/" + filename;
@@ -73,9 +84,31 @@ namespace CodeGenerator.Core
                 return false;
             }
         }
-
-        private static Dictionary<string, string> BlockCommentDictionary(string blockComment)
+        private List<ITableSchema> GetAllTableSchema()
         {
+            List<ITableSchema> list = new List<ITableSchema>();
+            foreach (string name in _tables)
+            {
+                DataFactory fac = DatabaseResolver.GetDataFactory(_setting);
+                ITableSchema its = fac.GetTableSchema(name);
+                list.Add(its);
+            }
+            return list;
+        }
+        /// <summary>
+        /// 是否要求包含表数据
+        /// </summary>
+        /// <param name="templatefile"></param>
+        /// <returns></returns>
+        private static bool ContainRows(string templatefile)
+        {
+            var text = File.ReadAllText(templatefile);
+            var dictionary = BlockCommentDictionary(text);
+            return dictionary.Count > 0 && dictionary.ContainsKey("rows") && "true".Equals(dictionary["rows"], StringComparison.OrdinalIgnoreCase);
+        }
+        private static Dictionary<string, string> BlockCommentDictionary(string text)
+        {
+            string blockComment = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*(/\*.+\n(.+\n)+?\s*\*+/)[^\0]+$", "$1");
             var dictionary = new Dictionary<string, string>();
             StringReader reader = new StringReader(blockComment);
             string currentLine;

@@ -163,5 +163,21 @@ namespace CodeGenerator.Core.Utils
             index = index < 0 ? 0 : index;
             return tableName.Substring(index + 1);
         }
+
+        public string MatchValue(string input, string pattern, int groupindex)
+        {
+            Regex regex = new Regex(pattern);
+            var match = regex.Match(input);
+            if (groupindex > match.Groups.Count - 1)
+            {
+                groupindex = 0;
+            }
+            string value = match.Groups[groupindex].Value;
+            return string.IsNullOrWhiteSpace(value) ? null : value;
+        }
+        public string PropertyTypeFromComment(string comment, string defaultValue)
+        {
+            return MatchValue(comment, "\\$(.+?)\\$", 1) ?? defaultValue;
+        }
     }
 }

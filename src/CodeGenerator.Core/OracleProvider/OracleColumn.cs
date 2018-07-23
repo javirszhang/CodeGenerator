@@ -94,5 +94,9 @@ namespace CodeGenerator.Core.OracleProvider
             get;
             set;
         }
+        /// <summary>
+        /// 是否自动增长
+        /// </summary>
+        public bool IsAutoIncrement { get; set; }
     }
 }

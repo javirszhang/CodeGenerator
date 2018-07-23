@@ -46,6 +46,8 @@
             this.lb_tables = new System.Windows.Forms.ListBox();
             this.txtSearchbox = new System.Windows.Forms.TextBox();
             this.tableTrees = new System.Windows.Forms.TreeView();
+            this.txtNamespace = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox4.SuspendLayout();
@@ -165,6 +167,8 @@
             // 
             // groupBox4
             // 
+            this.groupBox4.Controls.Add(this.label2);
+            this.groupBox4.Controls.Add(this.txtNamespace);
             this.groupBox4.Controls.Add(this.btnGenerate);
             this.groupBox4.Controls.Add(this.generateProcess);
             this.groupBox4.Controls.Add(this.lb_selectedTables);
@@ -234,6 +238,22 @@
             this.tableTrees.TabIndex = 4;
             this.tableTrees.DrawNode += new System.Windows.Forms.DrawTreeNodeEventHandler(this.tableTrees_DrawNode);
             // 
+            // txtNamespace
+            // 
+            this.txtNamespace.Location = new System.Drawing.Point(69, 532);
+            this.txtNamespace.Name = "txtNamespace";
+            this.txtNamespace.Size = new System.Drawing.Size(180, 21);
+            this.txtNamespace.TabIndex = 5;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(16, 535);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(53, 12);
+            this.label2.TabIndex = 6;
+            this.label2.Text = "命名空间";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -279,8 +299,8 @@
         private System.Windows.Forms.ProgressBar generateProcess;
         private System.Windows.Forms.Button btnGenerate;
         private System.Windows.Forms.TreeView tableTrees;
-
-
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.TextBox txtNamespace;
     }
 }
 

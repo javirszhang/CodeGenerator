@@ -19,12 +19,12 @@ namespace CodeGenerator
 {
     public partial class Form1 : Form
     {
-        private string _namespace, _savePath;
+        private string _savePath;
         public Form1()
         {
             InitializeComponent();
             _savePath = txtSavePath.Text.Trim();
-            _namespace = "Winner.YXH.****.DataAccess";
+            txtNamespace.Text = "Winner.****.DataAccess";
         }
         public Form1(string[] args)
             : this()
@@ -37,7 +37,7 @@ namespace CodeGenerator
             }
             else
             {
-                _namespace = "Winner.YXH.****.DataAccess";
+                txtNamespace.Text = "Winner.****.DataAccess";
                 _savePath = txtSavePath.Text.Trim();
             }
             txtSavePath.Text = this._savePath;
@@ -130,8 +130,9 @@ namespace CodeGenerator
         private string TemplatePath { get; set; }
         private void btnGenerate_Click(object sender, EventArgs e)
         {
-            //ConnectionSetting setting = new ConnectionSettingCollection()[cb_dbConnectionName.SelectedItem.ToString()];
             this.DbConnectionName = cb_dbConnectionName.SelectedItem.ToString();
+            ConnectionSetting setting = new ConnectionSettingCollection()[this.DbConnectionName];
+            setting.ConnectionString = txtConnectionString.Text.Trim();
             this.TemplatePath = (tableTrees.SelectedNode.Parent.Text + "/" == TreeRootName + "/" ? "" : tableTrees.SelectedNode.Parent.Text + "/") + tableTrees.SelectedNode.Text;
             if (lb_selectedTables.Items.Count <= 0)
             {
@@ -143,58 +144,34 @@ namespace CodeGenerator
                 MessageBox.Show("The template which you choose was not the standard VTL");
                 return;
             }
+            string saveDirectory = txtSavePath.Text.Trim();
             Task.Factory.StartNew(() =>
             {
                 string errorMsg;
-                GenerateAll(out errorMsg);
+                GenerateAll(saveDirectory, setting, out errorMsg);
             });
-            //int count = lb_selectedTables.Items.Count;
-            //int step = 100 % count == 0 ? 100 / count : 100 / count + 1;
-            //string templatepath = (tableTrees.SelectedNode.Parent.Text + "/" == TreeRootName + "/" ? "" : tableTrees.SelectedNode.Parent.Text + "/") + tableTrees.SelectedNode.Text;
-            //List<Task> tasks = new List<Task>();
-            //foreach (object obj in lb_selectedTables.Items)
-            //{
-            //    GenerateParameter para = new GenerateParameter
-            //    {
-            //        TableName = obj.ToString(),
-            //        Setting = setting,
-            //        Step = step,
-            //        SavePath = this._savePath, //txtSavePath.Text.Trim(),
-            //        TemplatePath = templatepath
-            //    };
-            //    tasks.Add(Task.Factory.StartNew(state =>
-            //    {
-            //        Generate(state);
-            //    }, para));
-            //}
-            //Task.Factory.StartNew(() =>
-            //{
-            //    Task.WaitAll(tasks.ToArray());
-            //    this.Invoke((MethodInvoker)delegate
-            //    {
-            //        lb_selectedTables.Items.Clear();
-            //        generateProcess.Value = 0;
-            //        _rate = 0;
-            //        MessageBox.Show("All generation has been completed!");
-            //    });
-            //});
         }
-        private void GenerateAll(out string errorMsg)
+        private void GenerateAll(string saveDictory, ConnectionSetting setting, out string errorMsg)
         {
-            ConnectionSetting setting = new ConnectionSettingCollection()[this.DbConnectionName];
             int count = lb_selectedTables.Items.Count;
             int step = 100 % count == 0 ? 100 / count : 100 / count + 1;
 
             errorMsg = "";
-            foreach (object obj in lb_selectedTables.Items)
+            string[] tables = new string[lb_selectedTables.Items.Count];
+            for (int i = 0; i < lb_selectedTables.Items.Count; i++)
+            {
+                tables[i] = lb_selectedTables.Items[i].ToString();
+            }
+            foreach (string name in tables)
             {
                 GenerateParameter para = new GenerateParameter
                 {
-                    TableName = obj.ToString(),
+                    TableName = name,
                     Setting = setting,
                     Step = step,
-                    SavePath = this._savePath, //txtSavePath.Text.Trim(),
-                    TemplatePath = this.TemplatePath
+                    SavePath = saveDictory,
+                    TemplatePath = this.TemplatePath,
+                    Tables = tables
                 };
                 if (!Generate(para))
                 {
@@ -227,15 +204,23 @@ namespace CodeGenerator
                 {
                     if (item.Name == "RootNamespace")
                     {
-                        this._namespace = item.EvaluatedValue;
+                        this.txtNamespace.Text = item.EvaluatedValue;
                         break;
                     }
                 }
-                this._savePath = Path.Combine(projectDir, "GenerateCode");
+                //this._savePath = Path.Combine(projectDir, "GenerateCode");
             }
             catch (Exception ex)
             {
-                File.AppendAllText("C:\\CodeGenerator.txt", string.Format("{0}{1}  错误信息：{2}{3},堆栈信息：{4}", Environment.NewLine, DateTime.Now.ToString(), ex.Message, Environment.NewLine, ex.StackTrace));
+                File.AppendAllText(GlobalLogFilePath, string.Format("{0}{1}  错误信息：{2}{3},堆栈信息：{4}", Environment.NewLine, DateTime.Now.ToString(), ex.Message, Environment.NewLine, ex.StackTrace));
+            }
+        }
+        protected string GlobalLogFilePath
+        {
+            get
+            {
+                string sysDrive = string.Concat("D:\\CodeGenerator.log");
+                return sysDrive;
             }
         }
         protected int Rate
@@ -262,16 +247,16 @@ namespace CodeGenerator
         private bool Generate(object obj)
         {
             GenerateParameter para = obj as GenerateParameter;
-            IConstant constant = new Constant(this._namespace);
+            IConstant constant = new Constant(this.txtNamespace.Text);
             //Rate = para.Step;
-            CodeBuilder builder = new CodeBuilder(para.TableName, para.TemplatePath, _namespace, para.Setting);
+            CodeBuilder builder = new CodeBuilder(para.Tables, para.TableName, para.TemplatePath, txtNamespace.Text, para.Setting);
             bool result = builder.Build(para.SavePath);
-            File.AppendAllText(@"D:\CodeGenerate.log", string.Format("{4}\tGenerate Table {0}，Result is {1}，Build Path at {2}{3}{5}", para.TableName, result, para.SavePath, Environment.NewLine, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+            File.AppendAllText(GlobalLogFilePath, string.Format("{4}\tGenerate Table {0}，Result is {1}，Build Path at {2}{3}{5}", para.TableName, result, para.SavePath, Environment.NewLine, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
                 builder.ExceptionMessage));
             return result;
         }
-        
-        
+
+
         protected class GenerateParameter
         {
             public string TableName { get; set; }
@@ -279,6 +264,7 @@ namespace CodeGenerator
             public string TemplatePath { get; set; }
             public string SavePath { get; set; }
             public int Step { get; set; }
+            public string[] Tables { get; set; }
         }
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -290,7 +276,7 @@ namespace CodeGenerator
             }
             if (csc.Count > 0)
                 cb_dbConnectionName.SelectedIndex = 0;
-            string path = AppDomain.CurrentDomain.BaseDirectory + "Template/";            
+            string path = AppDomain.CurrentDomain.BaseDirectory + "Template/";
             //tableTrees.DrawMode = TreeViewDrawMode.OwnerDrawAll; //是否自绘树形UI
             tableTrees.Nodes.Add(ListDir(path, null));
             tableTrees.ExpandAll();

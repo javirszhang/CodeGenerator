@@ -100,8 +100,17 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Template\daofactory.template.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Template\DataModel.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\MySQL.Template.V2.0.0.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\VirtualCurrencyType.template.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Template\Winner.Framework.DataAccess.Model.V1.0.0.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

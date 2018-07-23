@@ -4,7 +4,7 @@
  *
  * Data Access Layer Of Winner Framework
 #set($c=".generate.cs")
- * FileName : $StringUtil.ToPascalCase($Table.name)${c}
+ * FileName : $Utils.ToPascalCase($Table.name)${c}
  * CreateTime : ${Const.CurrentTime}
  * CodeGenerateVersion : ${Const.Version}
  * TemplateVersion: 1.0.0
@@ -13,7 +13,7 @@
  * Copyright (C) YXH
  * 
  ***************************************************/
- #set($classname=$StringUtil.ToPascalCase($Table.name))
+ #set($classname=$Utils.ToPascalCase($Table.name))
  namespace ${Const.Namespace}
  {
 	public partial class ${classname}
@@ -23,7 +23,7 @@
 		/// <summary>
 		/// $StringUtil.Inline($col.Comment)
 		/// </summary>
-		public ${col.PrimativeTypeName} $StringUtil.ToPascalCase($col.Name)
+		public ${col.PrimativeTypeName} $Utils.ToPascalCase($col.Name)
 		{
 			get;set;
 		}

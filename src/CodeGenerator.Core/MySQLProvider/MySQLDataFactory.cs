@@ -68,12 +68,21 @@ namespace CodeGenerator.Core.MySQLProvider
             SetPrimaryKey(oracleTable);
             return oracleTable;
         }
-
+        public override DataTable GetTableData(string table_name)
+        {
+            string sql = "SELECT * FROM " + table_name;
+            DbHelper helper = new DbHelper(this._connectionString);
+            return helper.ListBySql(sql);
+        }
         private void SetPrimaryKey(MySQLTableSchema oracleTable)
         {
-            string sql = @"select tc.table_name, tc.constraint_name,kc.column_name 
-from information_schema.table_constraints tc,information_schema.key_column_usage kc 
-where tc.constraint_type='PRIMARY KEY' and tc.constraint_name=kc.constraint_name and tc.table_schema=kc.table_schema and tc.table_name=kc.table_name and tc.table_name=@table_name and tc.table_schema=@table_schema";
+            string sql = @"select tc.table_name,tc.constraint_name,kc.column_name,tb.auto_increment 
+from information_schema.table_constraints tc
+left join information_schema.key_column_usage kc on tc.constraint_name = kc.constraint_name
+and tc.table_schema = kc.table_schema and tc.table_name = kc.table_name
+left join information_schema.tables tb on tb.table_name = tc.table_name and tb.table_schema = tc.table_schema
+where	tc.constraint_type = 'primary key'  
+and tc.table_name=@table_name and tc.table_schema=@table_schema";
             MySqlParameter para0 = new MySqlParameter("@table_name", oracleTable.Name);
             MySqlParameter para1 = new MySqlParameter("@table_schema", this.DatabaseName);
             DbHelper helper = new DbHelper(this._connectionString);
@@ -85,7 +94,9 @@ where tc.constraint_type='PRIMARY KEY' and tc.constraint_name=kc.constraint_name
                 string column_name = row["COLUMN_NAME"] + string.Empty;
                 string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
                 key.ConstraintName = constraint_name;
-                key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
+                IColumn pkCol = oracleTable.Columns.Find(it => it.Name == column_name);
+                pkCol.IsAutoIncrement = !string.IsNullOrEmpty(row["AUTO_INCREMENT"] + string.Empty);
+                key.Columns.Add(pkCol);
             }
             oracleTable.PrimaryKey = key;
         }
@@ -137,14 +148,14 @@ where tc.constraint_type='FOREIGN KEY' and tc.constraint_name=kc.constraint_name
 
         private void SetColumns(MySQLTableSchema oracleTable)
         {
-            string sql = @"SELECT COLUMN_NAME,DATA_TYPE,
-CHARACTER_MAXIMUM_LENGTH AS DATA_LENGTH,
-NUMERIC_PRECISION AS DATA_PRECISION,
-NUMERIC_SCALE AS DATA_SCALE,
-IS_NULLABLE AS NULLABLE,
-COLUMN_DEFAULT AS DATA_DEFAULT,
-COLUMN_COMMENT AS COMMENTS 
-FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=@TARGET_SCHEMA AND TABLE_NAME=@TARGET_TABLE";
+            string sql = @"select column_name,data_type,
+character_maximum_length as data_length,
+numeric_precision as data_precision,
+numeric_scale as data_scale,
+is_nullable as nullable,
+column_default as data_default,
+column_comment as comments 
+from information_schema.columns where table_schema=@target_schema and table_name=@target_table";
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql,
                 new MySqlParameter("@TARGET_SCHEMA", this.DatabaseName),

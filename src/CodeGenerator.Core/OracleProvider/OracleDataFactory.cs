@@ -55,6 +55,12 @@ SELECT VIEW_NAME FROM USER_VIEWS) TAB LEFT JOIN USER_TAB_COMMENTS UC ON UC.TABLE
             SetPrimaryKey(oracleTable);
             return oracleTable;
         }
+        public override DataTable GetTableData(string table_name)
+        {
+            string sql = "SELECT * FROM " + table_name;
+            DbHelper helper = new DbHelper(this._connectionString);
+            return helper.ListBySql(sql);
+        }
         private void SetColumns(OracleTableSchema oracleTable)
         {
             if (oracleTable == null)

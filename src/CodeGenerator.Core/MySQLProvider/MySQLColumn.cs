@@ -83,7 +83,10 @@ namespace CodeGenerator.Core.MySQLProvider
                 _PrimativeTypeName = value;
             }
         }
-
+        /// <summary>
+        /// 是否自动增长
+        /// </summary>
+        public bool IsAutoIncrement { get; set; }
         public int Scale
         {
             get;

@@ -2,6 +2,7 @@
 using CodeGenerator.Core.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,5 +18,7 @@ namespace CodeGenerator.Core
         }
         public abstract ITableSchema GetTableSchema(string table_name);
         public abstract DatabaseSchema GetDatabaseSchema();
+        public abstract DataTable GetTableData(string table_name);
+        
     }
 }

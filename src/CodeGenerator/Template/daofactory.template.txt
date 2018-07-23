@@ -1,0 +1,102 @@
+﻿ #set($oraValue=".Value")
+ #set($refsuo=".Entities;")
+ #set($quotapos=0)
+ #if($Const.namespace.lastindexof(".")<0)
+     #set($quotapos=$Const.namespace.length)
+ #else
+	 #set($quotapos=$Const.namespace.lastindexof("."))
+ #end
+ /***************************************************
+ *
+ * Data Access Layer Of Winner Framework
+#set($c=".cs")
+ * FileName : DaoFactory${c}
+ * CreateTime : ${Const.CurrentTime}
+ * CodeGenerateVersion : ${Const.Version}
+ * TemplateVersion: 2.0.0
+ * E_Mail : zhj.pavel@gmail.com
+ * Blog : 
+ * Copyright (C) YXH
+ * 
+ ***************************************************/
+using OAuth2.DataAccess.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ${Const.Namespace}
+{
+    public static class DaoFactory
+    {
+#foreach($tab in $Tables)
+		public static I${Utils.ToPascalCase($tab.Name)} ${Utils.ToPascalCase($tab.Name)}()
+        {
+            return BuildDAO<I${Utils.ToPascalCase($tab.Name)}>(new DataAccess.MySQL.${Utils.ToPascalCase($tab.Name)}, new DataAccess.Oracle.${Utils.ToPascalCase($tab.Name)}());
+        }
+#end
+        public static DatabaseType CurrentDatabaseType
+        {
+            get
+            {
+                DatabaseType type = DatabaseType.MySQL;
+                int winner_count = 0;
+                foreach (ConnectionStringSettings css in ConfigurationManager.ConnectionStrings)
+                {
+                    switch (css.Name.ToLower())
+                    {
+                        case "winner.framework.oracle.connectionstring":
+                            winner_count++;
+                            type = DatabaseType.Oracle;
+                            break;
+                        case "winner.framework.mysql.connectionstring":
+                            type = DatabaseType.MySQL;
+                            winner_count++;
+                            break;
+                        /*case "winner.framework.mssql.connectionstring":
+                            type = DatabaseType.MsSQL;
+                            winner_count++;
+                            break;
+                        case "winner.framework.postgre.connectionstring":
+                            type = DatabaseType.Postgre;
+                            winner_count++;
+                            break;
+                        case "winner.framework.sqlite.connectionstring":
+                            type = DatabaseType.SQLite;
+                            winner_count++;
+                            break;*/
+                        default:
+                            throw new ApplicationException("请配置数据库连接字符串");
+                    }
+                }
+                if (winner_count > 1)
+                {
+                    throw new ApplicationException("配置冲突，检测到多个数据库连接字符串配置。");
+                }
+                return type;
+            }
+        }
+        private static T BuildDAO<T>(T t1, T t2)
+        {
+            T t = t1;
+            switch (CurrentDatabaseType)
+            {
+                case DatabaseType.MySQL:
+                    t = t1;
+                    break;
+                case DatabaseType.Oracle:
+                    t = t2;
+                    break;
+            }
+            return t;
+        }
+	}
+    public enum DatabaseType
+    {
+        MySQL,
+        Oracle,
+    }
+
+}

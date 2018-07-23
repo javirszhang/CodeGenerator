@@ -1,0 +1,34 @@
+﻿ #set($oraValue=".Value")
+ #set($refsuo=".Entities;")
+ #set($quotapos=0)
+ #if($Const.namespace.lastindexof(".")<0)
+     #set($quotapos=$Const.namespace.length)
+ #else
+	 #set($quotapos=$Const.namespace.lastindexof("."))
+ #end
+ /***************************************************
+ *
+ * Data Access Layer Of Winner Framework
+#set($c=".cs")
+ * FileName : VirtualCurrencyType${c}
+ * CreateTime : ${Const.CurrentTime}
+ * CodeGenerateVersion : ${Const.Version}
+ * TemplateVersion: 2.0.0
+ * E_Mail : zhj.pavel@gmail.com
+ * rows : true
+ * Blog : 
+ * Copyright (C) YXH
+ * 
+ ***************************************************/
+ namespace ${Const.Namespace}
+{
+    public partial class VirtualCurrencyType
+    {
+#foreach($row in $Rows)
+		public static VirtualCurrencyType ${row.currency_name}
+		{
+			get { return new VirtualCurrencyType(${row.currency_id}); }
+		}
+#end
+	}
+}

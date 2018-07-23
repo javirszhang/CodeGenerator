@@ -47,7 +47,14 @@ namespace CodeGenerator.Core.Interfaces
         /// 是否可空
         /// </summary>
         bool IsNullable { get; set; }
+        /// <summary>
+        /// 是否为数字类型
+        /// </summary>
         bool IsNumeric { get; set; }
+        /// <summary>
+        /// 是否自动增长
+        /// </summary>
+        bool IsAutoIncrement { get; set; }
         /// <summary>
         /// 列所属表
         /// </summary>
