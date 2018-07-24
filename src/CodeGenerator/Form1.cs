@@ -29,11 +29,17 @@ namespace CodeGenerator
         public Form1(string[] args)
             : this()
         {
-            if (args.Length == 2)
+
+            if (args.Length >= 2)
             {
+                LogText(string.Join(";", args));
                 string projectDir = args[0];
                 string projectFileName = args[1];
                 ResolveForNamespace(projectDir, projectFileName);
+                if (args.Length >= 3)
+                {
+                    _savePath = args[2]?.TrimEnd('"');
+                }
             }
             else
             {
@@ -212,16 +218,13 @@ namespace CodeGenerator
             }
             catch (Exception ex)
             {
-                File.AppendAllText(GlobalLogFilePath, string.Format("{0}{1}  错误信息：{2}{3},堆栈信息：{4}", Environment.NewLine, DateTime.Now.ToString(), ex.Message, Environment.NewLine, ex.StackTrace));
+                LogText(string.Format("{0}{1}  错误信息：{2}{3},堆栈信息：{4}", Environment.NewLine, DateTime.Now.ToString(), ex.Message, Environment.NewLine, ex.StackTrace));
             }
         }
-        protected string GlobalLogFilePath
+        protected static void LogText(string text)
         {
-            get
-            {
-                string sysDrive = string.Concat("D:\\CodeGenerator.log");
-                return sysDrive;
-            }
+            string sysDrive = string.Concat("D:\\CodeGenerator.log");
+            File.AppendAllText(sysDrive, text + Environment.NewLine);
         }
         protected int Rate
         {
@@ -251,7 +254,7 @@ namespace CodeGenerator
             //Rate = para.Step;
             CodeBuilder builder = new CodeBuilder(para.Tables, para.TableName, para.TemplatePath, txtNamespace.Text, para.Setting);
             bool result = builder.Build(para.SavePath);
-            File.AppendAllText(GlobalLogFilePath, string.Format("{4}\tGenerate Table {0}，Result is {1}，Build Path at {2}{3}{5}", para.TableName, result, para.SavePath, Environment.NewLine, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+            LogText(string.Format("{4}\tGenerate Table {0}，Result is {1}，Build Path at {2}{3}{5}", para.TableName, result, para.SavePath, Environment.NewLine, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
                 builder.ExceptionMessage));
             return result;
         }

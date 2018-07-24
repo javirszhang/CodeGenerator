@@ -163,7 +163,7 @@ from information_schema.columns where table_schema=@target_schema and table_name
             oracleTable.Columns = new List<IColumn>();
             foreach (DataRow row in table.Rows)
             {
-                int scale = row.GetInt("DATA_SCALE"); //Convert.ToInt32(row["DATA_SCALE"]);
+                int scale = row.GetInt("DATA_SCALE");
                 string data_type = row["DATA_TYPE"] + string.Empty;
                 MySQLColumn column = new MySQLColumn
                 {
@@ -173,7 +173,7 @@ from information_schema.columns where table_schema=@target_schema and table_name
                     DbType = data_type,
                     DefaultValue = row["DATA_DEFAULT"] + string.Empty,
                     IsNullable = (row["NULLABLE"] + string.Empty) != "NO",
-                    Length = row.GetInt("DATA_LENGTH"), //Convert.ToInt32(row["DATA_LENGTH"]+string.Empty),
+                    Length = row.GetInt("DATA_LENGTH"),
                     Scale = scale,
                     Table = oracleTable,
                     IsNumeric = MySQLUtils.IsNumeric(data_type)

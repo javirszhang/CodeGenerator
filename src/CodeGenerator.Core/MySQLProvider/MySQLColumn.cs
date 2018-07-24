@@ -70,6 +70,8 @@ namespace CodeGenerator.Core.MySQLProvider
                     _PrimativeTypeName = "int";
                 else if (this.CsharpType == typeof(object))
                     _PrimativeTypeName = "object";
+                else if (this.CsharpType == typeof(long))
+                    _PrimativeTypeName = "long";
                 else
                     _PrimativeTypeName = this.CsharpType.Name;
                 if (this.CsharpType.IsValueType && IsNullable)
