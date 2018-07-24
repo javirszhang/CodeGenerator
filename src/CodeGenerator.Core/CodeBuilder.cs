@@ -48,20 +48,22 @@ namespace CodeGenerator.Core
             {
                 List<ITableSchema> allTables = GetAllTableSchema();
                 ITableSchema currentTable = allTables.Find(it => it.Name.Equals(_table_name));
-                string template_fullpath = GetCodeDir();
-                string templatefile = Path.Combine(template_fullpath, _template_name);
-                TemplateResolver th = new TemplateResolver(template_fullpath);
+                string templateFileName;//= Path.GetFileName(_template_name);
+                string templateDirPath;
+                string templateFileFullPath = GetTemplateInfo(_template_name, out templateDirPath, out templateFileName);
+
+                TemplateResolver th = new TemplateResolver(templateDirPath);
                 xUtils util = new xUtils();
                 th.Put("Tables", allTables);
                 th.Put("Table", currentTable);
                 th.Put("Utils", util);
                 th.Put("Const", this.Constant);
-                if (ContainRows(templatefile))
+                if (ContainRows(templateFileFullPath))
                 {
                     var fac = DatabaseResolver.GetDataFactory(this._setting);
                     th.Put("Rows", fac.GetTableData(this._table_name).ToDynamic());
                 }
-                string text = th.BuildString(Path.GetFileName(templatefile));
+                string text = th.BuildString(templateFileName);
 
                 var customerDefine = BlockCommentDictionary(text);
                 string filename = util.ToPascalCase(_table_name) + ".generate.cs";
@@ -135,12 +137,14 @@ namespace CodeGenerator.Core
             return dictionary;
         }
         public string ExceptionMessage { get; set; }
-        private string GetCodeDir()
+        private static string GetTemplateInfo(string template_name, out string directoryPath, out string template_filename)
         {
-            string path = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory + "template/" + _template_name);
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-            return path;
+            string fullpath = AppDomain.CurrentDomain.BaseDirectory + "template/" + template_name;
+            directoryPath = Path.GetDirectoryName(fullpath);
+            if (!Directory.Exists(directoryPath))
+                Directory.CreateDirectory(directoryPath);
+            template_filename = Path.GetFileName(fullpath);
+            return fullpath;
         }
     }
 }

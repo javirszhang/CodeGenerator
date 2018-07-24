@@ -21,6 +21,7 @@ bld/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
+[Tt]emplate/
 
 # Visual Studio 2015 cache/options directory
 .vs/
@@ -39,7 +40,7 @@ TestResult.xml
 [Dd]ebugPS/
 [Rr]eleasePS/
 dlldata.c
-
+connectionsettings.config
 # DNX
 project.lock.json
 artifacts/
