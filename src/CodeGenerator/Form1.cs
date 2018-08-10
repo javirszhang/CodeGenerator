@@ -25,6 +25,7 @@ namespace CodeGenerator
             InitializeComponent();
             _savePath = txtSavePath.Text.Trim();
             txtNamespace.Text = "Winner.****.DataAccess";
+            ExtendFunctions.Progress += ShowProgress;
         }
         public Form1(string[] args)
             : this()
@@ -103,6 +104,7 @@ namespace CodeGenerator
             ConnectionSettingCollection csc = new ConnectionSettingCollection();
             string connName = cb_dbConnectionName.SelectedItem.ToString();
             ConnectionSetting setting = csc[connName];
+            setting.ConnectionString = txtConnectionString.Text.Trim().TrimEnd(';');
             DataFactory factory = DatabaseResolver.GetDataFactory(setting);
             DatabaseSchema db = factory.GetDatabaseSchema();
             List<string> tables = new List<string>();
@@ -142,64 +144,57 @@ namespace CodeGenerator
             this.TemplatePath = (tableTrees.SelectedNode.Parent.Text + "/" == TreeRootName + "/" ? "" : tableTrees.SelectedNode.Parent.Text + "/") + tableTrees.SelectedNode.Text;
             if (lb_selectedTables.Items.Count <= 0)
             {
-                MessageBox.Show("Please choose the tables which you want to generate!");
+                MessageBox.Show("请选择您要生成的数据表");
                 return;
             }
             if (tableTrees.SelectedNode == null || (tableTrees.SelectedNode.Nodes != null && tableTrees.SelectedNode.Nodes.Count > 0))
             {
-                MessageBox.Show("The template which you choose was not the standard VTL");
+                MessageBox.Show("选择的模版不是标准的velocity引擎语言");
                 return;
             }
             string saveDirectory = txtSavePath.Text.Trim();
             Task.Factory.StartNew(() =>
             {
-                string errorMsg;
-                GenerateAll(saveDirectory, setting, out errorMsg);
+                GenerateAll(saveDirectory, setting);
             });
         }
-        private void GenerateAll(string saveDictory, ConnectionSetting setting, out string errorMsg)
+        private void GenerateAll(string saveDictory, ConnectionSetting setting)
         {
-            int count = lb_selectedTables.Items.Count;
-            int step = 100 % count == 0 ? 100 / count : 100 / count + 1;
-
-            errorMsg = "";
+            string errorMsg = "";
             string[] tables = new string[lb_selectedTables.Items.Count];
             for (int i = 0; i < lb_selectedTables.Items.Count; i++)
             {
                 tables[i] = lb_selectedTables.Items[i].ToString();
             }
+            string guid = Guid.NewGuid().ToString("N");
             foreach (string name in tables)
             {
                 GenerateParameter para = new GenerateParameter
                 {
                     TableName = name,
                     Setting = setting,
-                    Step = step,
                     SavePath = saveDictory,
                     TemplatePath = this.TemplatePath,
                     Tables = tables
                 };
-                if (!Generate(para))
+                if (!Generate(para, guid))
                 {
                     errorMsg += "[" + para.TableName + "]";
                 }
-                this.Invoke((MethodInvoker)delegate
-                {
-                    this.Rate = para.Step;
-                    this.generateProcess.Value = this.Rate;
-                });
-
             }
             this.Invoke((MethodInvoker)delegate
             {
                 lb_selectedTables.Items.Clear();
                 generateProcess.Value = 0;
-                _rate = 0;
-                MessageBox.Show("All generate tasks has been completed");
+                string messageshow = "所有的代码生成任务都已完成！";
+                if (!string.IsNullOrEmpty(errorMsg))
+                {
+                    messageshow += errorMsg + "生成失败";
+                }
+                MessageBox.Show(messageshow);
             });
 
         }
-        private static int _rate = 0;
         private void ResolveForNamespace(string projectDir, string projectFileName)
         {
             try
@@ -226,39 +221,27 @@ namespace CodeGenerator
             string sysDrive = string.Concat("D:\\CodeGenerator.log");
             File.AppendAllText(sysDrive, text + Environment.NewLine);
         }
-        protected int Rate
-        {
-            get
-            {
-                lock (lockobj)
-                {
-                    if (_rate > 100)
-                        return 100;
-                    return _rate;
-                }
-            }
-            set
-            {
-                lock (lockobj)
-                {
-                    _rate += value;
-                }
-            }
-        }
-        private static object lockobj = new object();
 
-        private bool Generate(object obj)
+        private bool Generate(object obj, string guid)
         {
             GenerateParameter para = obj as GenerateParameter;
             IConstant constant = new Constant(this.txtNamespace.Text);
-            //Rate = para.Step;
             CodeBuilder builder = new CodeBuilder(para.Tables, para.TableName, para.TemplatePath, txtNamespace.Text, para.Setting);
-            bool result = builder.Build(para.SavePath);
-            LogText(string.Format("{4}\tGenerate Table {0}，Result is {1}，Build Path at {2}{3}{5}", para.TableName, result, para.SavePath, Environment.NewLine, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
-                builder.ExceptionMessage));
+            bool result = builder.Build(para.SavePath, guid);
+            LogText(string.Format("{4}\t{6}\tGenerate Table {0}，Result is {1}，Build Path at {2}{3}{5}", para.TableName, result, para.SavePath, Environment.NewLine, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+                builder.ExceptionMessage, guid));
             return result;
         }
 
+        private void ShowProgress(int rate)
+        {
+            int expect = 100 - generateProcess.Value;
+            rate = expect > rate ? rate : expect;
+            this.Invoke((MethodInvoker)delegate ()
+            {
+                generateProcess.Value += rate;
+            });
+        }
 
         protected class GenerateParameter
         {

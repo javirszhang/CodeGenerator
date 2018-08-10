@@ -73,10 +73,18 @@ namespace CodeGenerator.Core.Utils
                 {
                     return "DBNull.Value";
                 }
-                if (s.ToUpper().StartsWith("SYSDATE"))
+                if (Regex.IsMatch(s, "^0(\\.0+)?$"))
+                {
+                    return "0";
+                }
+                if (s.ToUpper().StartsWith("SYSDATE") || s.ToUpper().IndexOf("CURRENT_TIMESTAMP") > -1 || "0000-00-00 00:00:00".Equals(s))
+                {
                     return "DateTime.Now";
-                else if (columnType == typeof(int) || columnType == typeof(decimal))
+                }
+                else if (columnType == typeof(int) || columnType == typeof(decimal) || columnType == typeof(long))
+                {                    
                     return s;
+                }
                 else
                     return "\"" + s + "\"";
             }

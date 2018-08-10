@@ -42,11 +42,11 @@ namespace CodeGenerator.Core
                 _constant = value;
             }
         }
-        public bool Build(string _codefilesavepath)
+        public bool Build(string _codefilesavepath, string guid)
         {
             try
             {
-                List<ITableSchema> allTables = GetAllTableSchema();
+                List<ITableSchema> allTables = GetAllTableSchema(_setting, _tables, guid);
                 ITableSchema currentTable = allTables.Find(it => it.Name.Equals(_table_name));
                 string templateFileName;//= Path.GetFileName(_template_name);
                 string templateDirPath;
@@ -86,16 +86,26 @@ namespace CodeGenerator.Core
                 return false;
             }
         }
-        private List<ITableSchema> GetAllTableSchema()
+        private static List<ITableSchema> tableSchemas = new List<ITableSchema>();
+        private static string flag = string.Empty;
+        private static List<ITableSchema> GetAllTableSchema(Entities.ConnectionSetting setting, string[] tables, string guid)
         {
-            List<ITableSchema> list = new List<ITableSchema>();
-            foreach (string name in _tables)
+            if (tableSchemas.Count > 0 && flag == guid)
             {
-                DataFactory fac = DatabaseResolver.GetDataFactory(_setting);
-                ITableSchema its = fac.GetTableSchema(name);
-                list.Add(its);
+                return tableSchemas;
             }
-            return list;
+            flag = guid;
+            int count = tables.Length;
+            int step = 100 % count == 0 ? 100 / count : 100 / count + 1;
+            tableSchemas.Clear();
+            foreach (string name in tables)
+            {
+                DataFactory fac = DatabaseResolver.GetDataFactory(setting);
+                ITableSchema its = fac.GetTableSchema(name);
+                tableSchemas.Add(its);
+                ExtendFunctions.OnProcess(step);
+            }
+            return tableSchemas;
         }
         /// <summary>
         /// 是否要求包含表数据

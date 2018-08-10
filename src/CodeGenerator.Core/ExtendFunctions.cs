@@ -36,5 +36,12 @@ namespace CodeGenerator.Core
             }
             return Convert.ToDecimal(ob);
         }
+
+        public static event Action<int> Progress;
+
+        public static void OnProcess(int v)
+        {
+            Progress?.Invoke(v);
+        }
     }
 }

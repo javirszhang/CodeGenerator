@@ -42,7 +42,7 @@ namespace CodeGenerator.Core.MySQLProvider
                 {
                     if (_connKV == null || _connKV.Count <= 0)
                     {
-                        string[] array = this._connectionString.Split(';');
+                        string[] array = this._connectionString.Trim().TrimEnd(';').Split(';');
                         _connKV = new Dictionary<string, string>();
                         foreach (string item in array)
                         {
@@ -113,13 +113,17 @@ where tc.constraint_type='UNIQUE' and tc.constraint_name=kc.constraint_name and 
             oracleTable.UniqueKeys = new List<Common.UniqueKey>();
             foreach (DataRow row in table.Rows)
             {
-                Common.UniqueKey key = new Common.UniqueKey();
-                key.Columns = new List<IColumn>();
                 string column_name = row["COLUMN_NAME"] + string.Empty;
                 string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
-                key.ConstraintName = constraint_name;
+                Common.UniqueKey key = oracleTable.UniqueKeys.Find(it => it.ConstraintName == constraint_name);
+                if (key == null)
+                {
+                    key = new Common.UniqueKey();                    
+                    key.Columns = new List<IColumn>();
+                    key.ConstraintName = constraint_name;
+                    oracleTable.UniqueKeys.Add(key);
+                }
                 key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
-                oracleTable.UniqueKeys.Add(key);
             }
 
         }
