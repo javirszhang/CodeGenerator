@@ -12,8 +12,13 @@ namespace CodeGenerator.Core.MySQLProvider
 {
     public class MySQLDataFactory : DataFactory
     {
+        /// <summary>
+        /// 读取外键key时是否加载外键引用表结构
+        /// </summary>
+        public bool ContainForeignTable { get; set; }
         public MySQLDataFactory(string connString) : base(connString)
         {
+            ContainForeignTable = true;
         }
 
         public override DatabaseSchema GetDatabaseSchema()
@@ -118,7 +123,7 @@ where tc.constraint_type='UNIQUE' and tc.constraint_name=kc.constraint_name and 
                 Common.UniqueKey key = oracleTable.UniqueKeys.Find(it => it.ConstraintName == constraint_name);
                 if (key == null)
                 {
-                    key = new Common.UniqueKey();                    
+                    key = new Common.UniqueKey();
                     key.Columns = new List<IColumn>();
                     key.ConstraintName = constraint_name;
                     oracleTable.UniqueKeys.Add(key);
@@ -130,9 +135,11 @@ where tc.constraint_type='UNIQUE' and tc.constraint_name=kc.constraint_name and 
 
         private void SetForeignKey(MySQLTableSchema oracleTable)
         {
-            string sql = @"select tc.table_name, tc.constraint_name,kc.column_name 
+            string sql = @"select tc.table_name, tc.constraint_name,kc.column_name,kc.referenced_table_name,kc.referenced_table_schema  
 from information_schema.table_constraints tc,information_schema.key_column_usage kc 
-where tc.constraint_type='FOREIGN KEY' and tc.constraint_name=kc.constraint_name and tc.table_schema=kc.table_schema and tc.table_name=kc.table_name and tc.table_name=@table_name and tc.table_schema=@table_schema";
+where tc.constraint_type='FOREIGN KEY' and tc.constraint_name=kc.constraint_name 
+and tc.table_schema=kc.table_schema and tc.table_name=kc.table_name
+and tc.table_name=@table_name and tc.table_schema=@table_schema";
             MySqlParameter para0 = new MySqlParameter("@table_name", oracleTable.Name);
             MySqlParameter para1 = new MySqlParameter("@table_schema", this.DatabaseName);
             DbHelper helper = new DbHelper(this._connectionString);
@@ -146,6 +153,15 @@ where tc.constraint_type='FOREIGN KEY' and tc.constraint_name=kc.constraint_name
                 string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
                 key.ConstraintName = constraint_name;
                 key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
+                if (ContainForeignTable && key.ForeignTable == null)
+                {
+                    string foreignTable = row["referenced_table_name"] + string.Empty;
+                    string referenced_schema = row["referenced_table_schema"] + string.Empty;
+                    var fac = new MySQLDataFactory(this._connectionString);
+                    fac.ContainForeignTable = false;
+                    fac._db_name = referenced_schema;
+                    key.ForeignTable = fac.GetTableSchema(foreignTable);
+                }
                 oracleTable.ForiegnKeys.Add(key);
             }
         }

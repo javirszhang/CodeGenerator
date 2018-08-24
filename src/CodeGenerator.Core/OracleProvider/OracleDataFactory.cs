@@ -12,9 +12,13 @@ namespace CodeGenerator.Core.OracleProvider
 {
     public class OracleDataFactory : DataFactory
     {
+        public bool ContainForeignTable
+        {
+            get; set;
+        }
         public OracleDataFactory(string connString) : base(connString)
         {
-
+            ContainForeignTable = true;
         }
 
         public override DatabaseSchema GetDatabaseSchema()
@@ -115,33 +119,37 @@ SELECT VIEW_NAME FROM USER_VIEWS) TAB LEFT JOIN USER_TAB_COMMENTS UC ON UC.TABLE
             {
                 SetColumns(oracleTable);
             }
-            string sql = @"SELECT UCC.CONSTRAINT_NAME, UCC.COLUMN_NAME
+            string sql = @"SELECT UCC.CONSTRAINT_NAME, UCC.COLUMN_NAME,UC1.TABLE_NAME FOREIGN_TABLE_NAME
   FROM USER_CONSTRAINTS UC
   LEFT JOIN USER_CONS_COLUMNS UCC
     ON UC.CONSTRAINT_NAME = UCC.CONSTRAINT_NAME
+  LEFT JOIN USER_CONSTRAINTS UC1 ON UC.R_CONSTRAINT_NAME=UC1.CONSTRAINT_NAME
  WHERE UC.CONSTRAINT_TYPE = 'R'
    AND UC.TABLE_NAME =:TABLE_NAME";
             OracleParameter para = new OracleParameter("TABLE_NAME", oracleTable.Name.ToUpper());
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql, para);
 
-            List<Common.ForeignKey> foreignes = new List<Common.ForeignKey>();
+            oracleTable.ForiegnKeys = new List<Common.ForeignKey>();
 
             foreach (DataRow row in table.Rows)
             {
                 string column_name = row["COLUMN_NAME"] + string.Empty;
                 string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
-                Common.ForeignKey key = foreignes.Find(it => it.ConstraintName == constraint_name);
-                if (key == null)
+
+                Common.ForeignKey key = new Common.ForeignKey();
+                key.Columns = new List<IColumn>();
+                key.ConstraintName = constraint_name;
+                if (key.ForeignTable == null && ContainForeignTable)
                 {
-                    key = new Common.ForeignKey();
-                    key.Columns = new List<IColumn>();
-                    key.ConstraintName = constraint_name;
-                    foreignes.Add(key);
+                    string forignTable = row["FOREIGN_TABLE_NAME"] + string.Empty;
+                    var fac = new OracleDataFactory(this._connectionString);
+                    fac.ContainForeignTable = false;
+                    key.ForeignTable = fac.GetTableSchema(forignTable);
                 }
                 key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
+                oracleTable.ForiegnKeys.Add(key);
             }
-            oracleTable.ForiegnKeys = foreignes;
         }
         private void SetUniqueKey(OracleTableSchema oracleTable)
         {
