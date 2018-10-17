@@ -197,10 +197,11 @@ namespace CodeGenerator
         }
         private void ResolveForNamespace(string projectDir, string projectFileName)
         {
+            string proj_full_path = Path.Combine(projectDir, projectFileName);
             try
             {
                 Microsoft.Build.Evaluation.ProjectCollection projCollection = new Microsoft.Build.Evaluation.ProjectCollection();
-                var proj = projCollection.LoadProject(Path.Combine(projectDir, projectFileName));
+                var proj = projCollection.LoadProject(proj_full_path);
                 foreach (var item in proj.Properties)
                 {
                     if (item.Name == "RootNamespace")
@@ -209,12 +210,37 @@ namespace CodeGenerator
                         break;
                     }
                 }
-                //this._savePath = Path.Combine(projectDir, "GenerateCode");
             }
             catch (Exception ex)
             {
-                LogText(string.Format("{0}{1}  错误信息：{2}{3},堆栈信息：{4}", Environment.NewLine, DateTime.Now.ToString(), ex.Message, Environment.NewLine, ex.StackTrace));
+                string ns = ReadNamespaceFromProjectXml(proj_full_path);
+                if (string.IsNullOrEmpty(ns))
+                {
+                    LogText(string.Format("{0}{1}  错误信息：{2}{3},堆栈信息：{4}", Environment.NewLine, DateTime.Now.ToString(), ex.Message, Environment.NewLine, ex.StackTrace));
+                }
+                else
+                {
+                    this.txtNamespace.Text = ns;
+                }
             }
+        }
+        private string ReadNamespaceFromProjectXml(string proj_path)
+        {
+            string @namespace = null;
+            string xml = File.ReadAllText(proj_path);
+            XElement xe = XElement.Parse(xml);
+            XNamespace xns = xe.Name.Namespace;
+            var groups = xe.Elements(xns + "PropertyGroup");
+            foreach (var item in groups)
+            {
+                var rn = item.Element(xns + "RootNamespace");
+                if (rn != null)
+                {
+                    @namespace = rn.Value;
+                    break;
+                }
+            }
+            return @namespace;
         }
         protected static void LogText(string text)
         {
