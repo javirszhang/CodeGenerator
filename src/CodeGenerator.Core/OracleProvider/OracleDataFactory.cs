@@ -84,7 +84,7 @@ SELECT VIEW_NAME FROM USER_VIEWS) TAB LEFT JOIN USER_TAB_COMMENTS UC ON UC.TABLE
   LEFT JOIN USER_COL_COMMENTS CC
     ON TC.COLUMN_NAME = CC.COLUMN_NAME
    AND TC.TABLE_NAME = CC.TABLE_NAME
-   WHERE TC.TABLE_NAME=:TABLE_NAME";
+   WHERE TC.TABLE_NAME=:TABLE_NAME ORDER BY TC.COLUMN_ID ASC";
             List<IColumn> columns = new List<IColumn>();
             OracleParameter para = new OracleParameter("TABLE_NAME", oracleTable.Name);
             DbHelper helper = new DbHelper(this._connectionString);
