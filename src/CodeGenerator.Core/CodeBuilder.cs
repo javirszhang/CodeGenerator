@@ -42,15 +42,16 @@ namespace CodeGenerator.Core
                 _constant = value;
             }
         }
+        public string templateFileFullPath { get; set; }
         public bool Build(string _codefilesavepath, string guid)
         {
             try
             {
-                List<ITableSchema> allTables = GetAllTableSchema(_setting, _tables, guid);
-                ITableSchema currentTable = allTables.Find(it => it.Name.Equals(_table_name));
                 string templateFileName;//= Path.GetFileName(_template_name);
                 string templateDirPath;
-                string templateFileFullPath = GetTemplateInfo(_template_name, out templateDirPath, out templateFileName);
+                templateFileFullPath = GetTemplateInfo(_template_name, out templateDirPath, out templateFileName);
+                List<ITableSchema> allTables = GetAllTableSchema(_setting, _tables, guid);
+                ITableSchema currentTable = allTables.Find(it => it.Name.Equals(_table_name));
 
                 TemplateResolver th = new TemplateResolver(templateDirPath);
                 xUtils util = new xUtils();
@@ -83,8 +84,14 @@ namespace CodeGenerator.Core
             catch (Exception ex)
             {
                 this.ExceptionMessage = ex.Message;
+                LogText(string.Concat(Environment.NewLine, ex.StackTrace));
                 return false;
             }
+        }
+        protected static void LogText(string text)
+        {
+            string sysDrive = string.Concat("D:\\CodeGenerator.log");
+            File.AppendAllText(sysDrive, Environment.NewLine + text);
         }
         private static List<ITableSchema> tableSchemas = new List<ITableSchema>();
         private static string flag = string.Empty;
@@ -149,7 +156,7 @@ namespace CodeGenerator.Core
         public string ExceptionMessage { get; set; }
         private static string GetTemplateInfo(string template_name, out string directoryPath, out string template_filename)
         {
-            string fullpath = AppDomain.CurrentDomain.BaseDirectory + "template/" + template_name;
+            string fullpath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "template", template_name);
             directoryPath = Path.GetDirectoryName(fullpath);
             if (!Directory.Exists(directoryPath))
                 Directory.CreateDirectory(directoryPath);

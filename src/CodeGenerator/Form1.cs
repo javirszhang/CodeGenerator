@@ -13,6 +13,7 @@ using CodeGenerator.Core.Interfaces;
 using System.Threading;
 using System.Xml.Linq;
 using System.Threading.Tasks;
+using System.Collections;
 //using Microsoft.Data.ConnectionUI;
 
 namespace CodeGenerator
@@ -27,19 +28,27 @@ namespace CodeGenerator
             txtNamespace.Text = "Winner.****.DataAccess";
             ExtendFunctions.Progress += ShowProgress;
         }
-        public Form1(string[] args)
-            : this()
+        public Form1(string[] args) : this()
         {
-
             if (args.Length >= 2)
             {
-                LogText(string.Join(";", args));
-                string projectDir = args[0];
-                string projectFileName = args[1];
-                ResolveForNamespace(projectDir, projectFileName);
-                if (args.Length >= 3)
+                try
                 {
-                    _savePath = args[2]?.TrimEnd('"');
+                    LogText(string.Join(";", args));
+                    string projectDir = args[0];
+                    string projectFileName = args[1];
+                    ResolveForNamespace(projectDir, projectFileName);
+                    if (args.Length >= 3)
+                    {
+                        _savePath = args[2]?.TrimEnd('"');
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogText("解析参数失败");
+                    LogText(ex.Message);
+                    txtNamespace.Text = "Winner.****.DataAccess";
+                    _savePath = txtSavePath.Text.Trim();
                 }
             }
             else
@@ -155,18 +164,31 @@ namespace CodeGenerator
             string saveDirectory = txtSavePath.Text.Trim();
             Task.Factory.StartNew(() =>
             {
-                GenerateAll(saveDirectory, setting);
+                string errorMsg;
+                GenerateAll(saveDirectory, setting, lb_selectedTables.Items, this.TemplatePath, this.txtNamespace.Text, out errorMsg);
+                this.Invoke((MethodInvoker)delegate
+                {
+                    lb_selectedTables.Items.Clear();
+                    generateProcess.Value = 0;
+                    string messageshow = "所有的代码生成任务都已完成！";
+                    if (!string.IsNullOrEmpty(errorMsg))
+                    {
+                        messageshow += errorMsg + "生成失败";
+                    }
+                    MessageBox.Show(messageshow);
+                });
             });
         }
-        private void GenerateAll(string saveDictory, ConnectionSetting setting)
+        public static bool GenerateAll(string saveDictory, ConnectionSetting setting, IList selectedTables, string templatePath, string @namespace, out string errorMsg)
         {
-            string errorMsg = "";
-            string[] tables = new string[lb_selectedTables.Items.Count];
-            for (int i = 0; i < lb_selectedTables.Items.Count; i++)
+            errorMsg = string.Empty;
+            string[] tables = new string[selectedTables.Count];
+            for (int i = 0; i < selectedTables.Count; i++)
             {
-                tables[i] = lb_selectedTables.Items[i].ToString();
+                tables[i] = selectedTables[i].ToString();
             }
             string guid = Guid.NewGuid().ToString("N");
+            int error = 0;
             foreach (string name in tables)
             {
                 GenerateParameter para = new GenerateParameter
@@ -174,26 +196,16 @@ namespace CodeGenerator
                     TableName = name,
                     Setting = setting,
                     SavePath = saveDictory,
-                    TemplatePath = this.TemplatePath,
+                    TemplatePath = templatePath,
                     Tables = tables
                 };
-                if (!Generate(para, guid))
+                if (!Generate(para, guid, @namespace))
                 {
                     errorMsg += "[" + para.TableName + "]";
+                    error++;
                 }
             }
-            this.Invoke((MethodInvoker)delegate
-            {
-                lb_selectedTables.Items.Clear();
-                generateProcess.Value = 0;
-                string messageshow = "所有的代码生成任务都已完成！";
-                if (!string.IsNullOrEmpty(errorMsg))
-                {
-                    messageshow += errorMsg + "生成失败";
-                }
-                MessageBox.Show(messageshow);
-            });
-
+            return error == 0;
         }
         private void ResolveForNamespace(string projectDir, string projectFileName)
         {
@@ -216,7 +228,7 @@ namespace CodeGenerator
                 string ns = ReadNamespaceFromProjectXml(proj_full_path);
                 if (string.IsNullOrEmpty(ns))
                 {
-                    LogText(string.Format("{0}{1}  错误信息：{2}{3},堆栈信息：{4}", Environment.NewLine, DateTime.Now.ToString(), ex.Message, Environment.NewLine, ex.StackTrace));
+                    LogText(string.Format("{0}{1}{5}  错误信息：{2}{3},堆栈信息：{4}", Environment.NewLine, DateTime.Now.ToString(), ex.Message, Environment.NewLine, ex.StackTrace, proj_full_path));
                 }
                 else
                 {
@@ -224,7 +236,7 @@ namespace CodeGenerator
                 }
             }
         }
-        private string ReadNamespaceFromProjectXml(string proj_path)
+        public static string ReadNamespaceFromProjectXml(string proj_path)
         {
             string @namespace = null;
             string xml = File.ReadAllText(proj_path);
@@ -240,6 +252,10 @@ namespace CodeGenerator
                     break;
                 }
             }
+            if (string.IsNullOrEmpty(@namespace))
+            {
+                @namespace = Path.GetFileNameWithoutExtension(proj_path);
+            }
             return @namespace;
         }
         protected static void LogText(string text)
@@ -248,14 +264,14 @@ namespace CodeGenerator
             File.AppendAllText(sysDrive, text + Environment.NewLine);
         }
 
-        private bool Generate(object obj, string guid)
+        private static bool Generate(object obj, string guid, string @namespace)
         {
             GenerateParameter para = obj as GenerateParameter;
-            IConstant constant = new Constant(this.txtNamespace.Text);
-            CodeBuilder builder = new CodeBuilder(para.Tables, para.TableName, para.TemplatePath, txtNamespace.Text, para.Setting);
+            IConstant constant = new Constant(@namespace);
+            CodeBuilder builder = new CodeBuilder(para.Tables, para.TableName, para.TemplatePath, @namespace, para.Setting);
             bool result = builder.Build(para.SavePath, guid);
-            LogText(string.Format("{4}\t{6}\tGenerate Table {0}，Result is {1}，Build Path at {2}{3}{5}", para.TableName, result, para.SavePath, Environment.NewLine, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
-                builder.ExceptionMessage, guid));
+            LogText(string.Format("{4}\t{6}\tGenerate Table {0}，Result is {1}，Build Path at {2},Template is {7}{3}{5}", para.TableName, result, para.SavePath, Environment.NewLine, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+                builder.ExceptionMessage, guid, builder.templateFileFullPath));
             return result;
         }
 

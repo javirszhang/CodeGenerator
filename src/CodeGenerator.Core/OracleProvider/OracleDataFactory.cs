@@ -25,10 +25,10 @@ namespace CodeGenerator.Core.OracleProvider
         {
             DatabaseSchema db = new DatabaseSchema();
             db.Tables = new List<ITableSchema>();
-            string sql = @"SELECT TAB.TABLE_NAME,UC.COMMENTS FROM (
-SELECT TABLE_NAME FROM USER_TABLES
-UNION ALL
-SELECT VIEW_NAME FROM USER_VIEWS) TAB LEFT JOIN USER_TAB_COMMENTS UC ON UC.TABLE_NAME=TAB.TABLE_NAME ORDER BY TAB.TABLE_NAME ASC";
+            string sql = @"SELECT UO.OBJECT_NAME AS TABLE_NAME,UO.OBJECT_TYPE,UC.COMMENTS,UV.TEXT FROM USER_OBJECTS UO 
+LEFT JOIN USER_TAB_COMMENTS UC ON UC.TABLE_NAME=UO.OBJECT_NAME 
+LEFT JOIN USER_VIEWS UV ON UV.VIEW_NAME=UO.OBJECT_NAME
+WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') ORDER BY UO.OBJECT_NAME ASC";
             DbHelper helper = new DbHelper(this._connectionString);
             var data = helper.ListBySql(sql, null);
             foreach (DataRow row in data.Rows)
@@ -43,16 +43,23 @@ SELECT VIEW_NAME FROM USER_VIEWS) TAB LEFT JOIN USER_TAB_COMMENTS UC ON UC.TABLE
 
         public override ITableSchema GetTableSchema(string table_name)
         {
-            string sql = @"SELECT TAB.TABLE_NAME,UC.COMMENTS FROM (
-SELECT TABLE_NAME FROM USER_TABLES
-UNION ALL
-SELECT VIEW_NAME FROM USER_VIEWS) TAB LEFT JOIN USER_TAB_COMMENTS UC ON UC.TABLE_NAME=TAB.TABLE_NAME WHERE TAB.TABLE_NAME=:TABLE_NAME ORDER BY TAB.TABLE_NAME ASC";
+            string sql = @"SELECT UO.OBJECT_NAME AS TABLE_NAME,UO.OBJECT_TYPE,UC.COMMENTS,UV.TEXT FROM USER_OBJECTS UO 
+LEFT JOIN USER_TAB_COMMENTS UC ON UC.TABLE_NAME=UO.OBJECT_NAME 
+LEFT JOIN USER_VIEWS UV ON UV.VIEW_NAME=UO.OBJECT_NAME
+WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY UO.OBJECT_NAME ASC";
             DbHelper helper = new DbHelper(this._connectionString);
-            var data = helper.ListBySql(sql, new OracleParameter("TABLE_NAME", table_name));
-
+            //Console.WriteLine(this._connectionString);
+            var data = helper.ListBySql(sql, new OracleParameter("TABLE_NAME", table_name.ToUpper()));
+            //Console.WriteLine("查询数据条数：" + data.Rows.Count);
+            string objectType = data.Rows[0]["OBJECT_TYPE"] + string.Empty;
             OracleTableSchema oracleTable = new OracleTableSchema();
             oracleTable.Name = table_name;
             oracleTable.Comment = data.Rows[0]["COMMENTS"] + string.Empty;
+            oracleTable.ObjectType = objectType;
+            if (objectType == "VIEW")
+            {
+                oracleTable.ViewScript = data.Rows[0]["TEXT"].ToString();
+            }
             SetColumns(oracleTable);
             SetForeignKey(oracleTable);
             SetUniqueKey(oracleTable);

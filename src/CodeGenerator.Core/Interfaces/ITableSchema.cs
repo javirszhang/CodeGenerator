@@ -15,5 +15,13 @@ namespace CodeGenerator.Core.Interfaces
         List<ForeignKey> ForiegnKeys { get; set; }
         List<UniqueKey> UniqueKeys { get; set; }
         PrimaryKey PrimaryKey { get; set; }
+        /// <summary>
+        /// 对象类型，TABLE or VIEW
+        /// </summary>
+        string ObjectType { get; set; }
+        /// <summary>
+        /// 视图脚本
+        /// </summary>
+        string ViewScript { get; set; }
     }
 }
