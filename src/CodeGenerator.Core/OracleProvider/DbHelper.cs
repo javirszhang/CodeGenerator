@@ -1,8 +1,8 @@
-﻿using Oracle.ManagedDataAccess.Client;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Data.OracleClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,7 +27,11 @@ namespace CodeGenerator.Core.OracleProvider
                 cmd.Parameters.AddRange(paras);
 
             DataTable dt = new DataTable();
-            conn.Open();            
+            conn.Open();
+            //DataSet ds = new DataSet();
+            //OracleDataAdapter adapter = new OracleDataAdapter(cmd);
+            //adapter.Fill(ds);
+            //dt = ds.Tables[0];
             using (OracleDataReader dr = cmd.ExecuteReader(CommandBehavior.CloseConnection))
             {
                 dt.Load(dr);

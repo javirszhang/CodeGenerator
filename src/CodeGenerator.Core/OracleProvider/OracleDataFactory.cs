@@ -1,9 +1,9 @@
 ﻿using CodeGenerator.Core.Entities;
 using CodeGenerator.Core.Interfaces;
-using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.OracleClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -106,7 +106,7 @@ WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY
                     Comment = row["COMMENTS"] + string.Empty,
                     CsharpType = OracleUtils.TransformDatabaseType(data_type, scale),
                     DbType = data_type,
-                    DefaultValue = row["DATA_DEFAULT"] + string.Empty,
+                    DefaultValue = (row["DATA_DEFAULT"] + string.Empty).Trim('\r','\n'),
                     IsNullable = (row["NULLABLE"] + string.Empty) == "Y",
                     Length = Convert.ToInt32(row["DATA_LENGTH"]),
                     Scale = scale,
