@@ -40,14 +40,14 @@
             this.btnChangeDir = new System.Windows.Forms.Button();
             this.txtSavePath = new System.Windows.Forms.TextBox();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.txtNamespace = new System.Windows.Forms.TextBox();
             this.btnGenerate = new System.Windows.Forms.Button();
             this.generateProcess = new System.Windows.Forms.ProgressBar();
             this.lb_selectedTables = new System.Windows.Forms.ListBox();
             this.lb_tables = new System.Windows.Forms.ListBox();
             this.txtSearchbox = new System.Windows.Forms.TextBox();
             this.tableTrees = new System.Windows.Forms.TreeView();
-            this.txtNamespace = new System.Windows.Forms.TextBox();
-            this.label2 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox4.SuspendLayout();
@@ -181,6 +181,22 @@
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "数据表";
             // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(16, 535);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(53, 12);
+            this.label2.TabIndex = 6;
+            this.label2.Text = "命名空间";
+            // 
+            // txtNamespace
+            // 
+            this.txtNamespace.Location = new System.Drawing.Point(69, 532);
+            this.txtNamespace.Name = "txtNamespace";
+            this.txtNamespace.Size = new System.Drawing.Size(180, 21);
+            this.txtNamespace.TabIndex = 5;
+            // 
             // btnGenerate
             // 
             this.btnGenerate.Location = new System.Drawing.Point(255, 523);
@@ -215,9 +231,11 @@
             this.lb_tables.Location = new System.Drawing.Point(6, 52);
             this.lb_tables.Margin = new System.Windows.Forms.Padding(10);
             this.lb_tables.Name = "lb_tables";
+            this.lb_tables.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
             this.lb_tables.Size = new System.Drawing.Size(182, 436);
             this.lb_tables.TabIndex = 1;
             this.lb_tables.DoubleClick += new System.EventHandler(this.lb_tables_DoubleClick);
+            this.lb_tables.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.lb_tables_KeyPress);
             // 
             // txtSearchbox
             // 
@@ -237,22 +255,6 @@
             this.tableTrees.Size = new System.Drawing.Size(628, 355);
             this.tableTrees.TabIndex = 4;
             this.tableTrees.DrawNode += new System.Windows.Forms.DrawTreeNodeEventHandler(this.tableTrees_DrawNode);
-            // 
-            // txtNamespace
-            // 
-            this.txtNamespace.Location = new System.Drawing.Point(69, 532);
-            this.txtNamespace.Name = "txtNamespace";
-            this.txtNamespace.Size = new System.Drawing.Size(180, 21);
-            this.txtNamespace.TabIndex = 5;
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(16, 535);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(53, 12);
-            this.label2.TabIndex = 6;
-            this.label2.Text = "命名空间";
             // 
             // Form1
             // 

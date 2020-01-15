@@ -413,5 +413,17 @@ namespace CodeGenerator
             System.Environment.Exit(0);
         }
         #endregion
+
+        private void lb_tables_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == 13)
+            {
+                foreach (var item in lb_tables.SelectedItems)
+                {
+                    if (!lb_selectedTables.Items.Contains(item))
+                        lb_selectedTables.Items.Add(item);
+                }
+            }
+        }
     }
 }
