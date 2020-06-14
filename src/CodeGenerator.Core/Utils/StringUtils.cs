@@ -82,7 +82,7 @@ namespace CodeGenerator.Core.Utils
                     return "DateTime.Now";
                 }
                 else if (columnType == typeof(int) || columnType == typeof(decimal) || columnType == typeof(long))
-                {                    
+                {
                     return s;
                 }
                 else
@@ -168,8 +168,12 @@ namespace CodeGenerator.Core.Utils
                 return tableName;
             }
             int index = tableName.IndexOf('_');
-            index = index < 0 ? 0 : index;
-            return tableName.Substring(index + 1);
+            if (index < 0)
+            {
+                return tableName;
+            }
+            string suffix = tableName.Substring(index + 1);
+            return ToPascalCase(suffix);
         }
 
         public string MatchValue(string input, string pattern, int groupindex)
