@@ -22,6 +22,7 @@ namespace CodeGenerator.Core
                     factory = new OracleProvider.OracleDataFactory(setting.ConnectionString);
                     break;
                 case DatabaseType.Mssql:
+                    factory = new MssqlProvider.SqlServerDataFactory(setting.ConnectionString);
                     break;
                 case DatabaseType.MySQL:
                     factory = new MySQLProvider.MySQLDataFactory(setting.ConnectionString);
