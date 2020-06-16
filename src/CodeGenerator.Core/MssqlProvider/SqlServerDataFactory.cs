@@ -121,6 +121,7 @@ order by a.id,a.colorder";
                     Length = Convert.ToInt32(row["DATA_LENGTH"]),
                     Scale = scale,
                     Table = oracleTable,
+                    IsAutoIncrement = Convert.ToInt32(row["AUTOINCREMENT"]) == 1,
                     IsNumeric = SqlServerUtils.IsNumeric(data_type)
                 };
                 oracleTable.Columns.Add(column);
