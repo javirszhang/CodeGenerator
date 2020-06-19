@@ -110,15 +110,16 @@ order by a.id,a.colorder";
             {
                 int scale = Convert.ToInt32(row["DATA_SCALE"]);
                 string data_type = row["DATA_TYPE"] + string.Empty;
+                int len = Convert.ToInt32(row["DATA_LENGTH"]);
                 var column = new SqlServerColumn
                 {
                     Name = row["COLUMN_NAME"] + string.Empty,
                     Comment = row["COMMENTS"] + string.Empty,
-                    CsharpType = SqlServerUtils.TransformDatabaseType(data_type, scale),
+                    CsharpType = SqlServerUtils.TransformDatabaseType(data_type, len, scale),
                     DbType = data_type,
                     DefaultValue = (row["DATA_DEFAULT"] + string.Empty).Trim('\r', '\n'),
                     IsNullable = (row["NULLABLE"] + string.Empty) == "Y",
-                    Length = Convert.ToInt32(row["DATA_LENGTH"]),
+                    Length = len,
                     Scale = scale,
                     Table = oracleTable,
                     IsAutoIncrement = Convert.ToInt32(row["AUTOINCREMENT"]) == 1,
