@@ -24,8 +24,8 @@ namespace CodeGenerator.Core.MssqlProvider
         {
             string sql = @"SELECT tbs.name ,ds.value as comments      
 FROM sysobjects tbs 
-LEFT JOIN sys.extended_properties ds ON ds.major_id=tbs.id
-where ds.minor_id=0 and tbs.xtype in ('U','V')";
+LEFT JOIN sys.extended_properties ds ON ds.major_id=tbs.id and ds.minor_id=0
+where tbs.xtype in ('U','V') order by tbs.name";
             DatabaseSchema schema = new DatabaseSchema();
             schema.Tables = new List<ITableSchema>();
             DbHelper helper = new DbHelper(this._connectionString);
@@ -53,10 +53,10 @@ where ds.minor_id=0 and tbs.xtype in ('U','V')";
         {
             string sql = @"SELECT tbs.name ,ds.value as comments ,tbs.xtype as  OBJECT_TYPE ,null as TEXT   
 FROM sysobjects tbs 
-LEFT JOIN sys.extended_properties ds ON ds.major_id=tbs.id
-where ds.minor_id=0 and tbs.xtype in ('U','V') and tbs.name=@TABLE_NAME";
+LEFT JOIN sys.extended_properties ds ON ds.major_id=tbs.id and ds.minor_id=0
+where tbs.xtype in ('U','V') and tbs.name=@TABLE_NAME";
             DbHelper helper = new DbHelper(this._connectionString);
-            var data = helper.ListBySql(sql, new SqlParameter("TABLE_NAME", table_name));
+            var data = helper.ListBySql(sql, new SqlParameter("@TABLE_NAME", table_name));
             string objectType = data.Rows[0]["OBJECT_TYPE"] + string.Empty;
             SqlServerTableSchema oracleTable = new SqlServerTableSchema();
             oracleTable.Name = table_name;
@@ -103,7 +103,7 @@ where b.name is not null
 and d.name=@table_name 
 order by a.id,a.colorder";
             List<IColumn> columns = new List<IColumn>();
-            var para = new SqlParameter("table_name", oracleTable.Name);
+            var para = new SqlParameter("@table_name", oracleTable.Name);
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql, para);
             foreach (DataRow row in table.Rows)
@@ -146,7 +146,7 @@ left join sys.tables sub on sub.object_id=fk.rkeyid
 left join syscolumns main_col on fk.fkey=main_col.colid and fk.fkeyid=main_col.id
 left join sysobjects obj on obj.id=fk.constid
 where main.name=@TABLE_NAME";
-            var para = new SqlParameter("TABLE_NAME", oracleTable.Name.ToUpper());
+            var para = new SqlParameter("@TABLE_NAME", oracleTable.Name.ToUpper());
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql, para);
 
@@ -187,7 +187,7 @@ FROM      SYS.INDEXES IDX JOIN
                 IDX.IS_UNIQUE_CONSTRAINT = 1) JOIN
                 SYS.TABLES TAB ON (IDX.OBJECT_ID = TAB.OBJECT_ID) JOIN
                 SYS.COLUMNS COL ON (IDX.OBJECT_ID = COL.OBJECT_ID AND IDXCOL.COLUMN_ID = COL.COLUMN_ID) where tab.name=@TABLE_NAME";
-            var para = new SqlParameter("TABLE_NAME", oracleTable.Name.ToUpper());
+            var para = new SqlParameter("@TABLE_NAME", oracleTable.Name.ToUpper());
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql, para);
 
@@ -226,7 +226,7 @@ FROM SYS.INDEXES IDX JOIN
                 IDX.IS_PRIMARY_KEY = 1) JOIN
                 SYS.TABLES TAB ON (IDX.OBJECT_ID = TAB.OBJECT_ID) JOIN
                 SYS.COLUMNS COL ON (IDX.OBJECT_ID = COL.OBJECT_ID AND IDXCOL.COLUMN_ID = COL.COLUMN_ID) where tab.name=@TABLE_NAME";
-            var para = new SqlParameter("TABLE_NAME", oracleTable.Name.ToUpper());
+            var para = new SqlParameter("@TABLE_NAME", oracleTable.Name.ToUpper());
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql, para);
             Common.PrimaryKey key = new Common.PrimaryKey();
