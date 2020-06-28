@@ -118,7 +118,7 @@ order by a.id,a.colorder";
                     CsharpType = SqlServerUtils.TransformDatabaseType(data_type, len, scale),
                     DbType = data_type,
                     DefaultValue = (row["DATA_DEFAULT"] + string.Empty).Trim('\r', '\n'),
-                    IsNullable = (row["NULLABLE"] + string.Empty) == "Y",
+                    IsNullable = (row["NULLABLE"] + string.Empty) == "1",
                     Length = len,
                     Scale = scale,
                     Table = oracleTable,
