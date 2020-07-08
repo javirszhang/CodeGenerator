@@ -86,7 +86,7 @@ from information_schema.table_constraints tc
 left join information_schema.key_column_usage kc on tc.constraint_name = kc.constraint_name
 and tc.table_schema = kc.table_schema and tc.table_name = kc.table_name
 left join information_schema.tables tb on tb.table_name = tc.table_name and tb.table_schema = tc.table_schema
-where	tc.constraint_type = 'primary key'  
+where	upper(tc.constraint_type) = 'PRIMARY KEY'  
 and tc.table_name=@table_name and tc.table_schema=@table_schema";
             MySqlParameter para0 = new MySqlParameter("@table_name", oracleTable.Name);
             MySqlParameter para1 = new MySqlParameter("@table_schema", this.DatabaseName);
@@ -110,7 +110,8 @@ and tc.table_name=@table_name and tc.table_schema=@table_schema";
         {
             string sql = @"select tc.table_name, tc.constraint_name,kc.column_name 
 from information_schema.table_constraints tc,information_schema.key_column_usage kc 
-where tc.constraint_type='UNIQUE' and tc.constraint_name=kc.constraint_name and tc.table_schema=kc.table_schema and tc.table_name=kc.table_name and tc.table_name=@table_name and tc.table_schema=@table_schema";
+where upper(tc.constraint_type)='UNIQUE' and tc.constraint_name=kc.constraint_name and tc.table_schema=kc.table_schema 
+and tc.table_name=kc.table_name and tc.table_name=@table_name and tc.table_schema=@table_schema";
             MySqlParameter para0 = new MySqlParameter("@table_name", oracleTable.Name);
             MySqlParameter para1 = new MySqlParameter("@table_schema", this.DatabaseName);
             DbHelper helper = new DbHelper(this._connectionString);
