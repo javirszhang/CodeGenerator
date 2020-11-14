@@ -25,7 +25,7 @@ namespace CodeGenerator.Core.MySQLProvider
         {
             DatabaseSchema db = new DatabaseSchema();
             db.Tables = new List<ITableSchema>();
-            string sql = @"SELECT TABLE_NAME,TABLE_COMMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=@TARGET_SCHEMA";
+            string sql = @"SELECT table_name,TABLE_COMMENT,IF(table_type='BASE TABLE','TABLE','VIEW') as object_type FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=@TARGET_SCHEMA";
             DbHelper helper = new DbHelper(this._connectionString);
             var data = helper.ListBySql(sql, new MySqlParameter("@TARGET_SCHEMA", this.DatabaseName));
             foreach (DataRow row in data.Rows)
@@ -33,6 +33,7 @@ namespace CodeGenerator.Core.MySQLProvider
                 MySQLTableSchema table = new MySQLTableSchema();
                 table.Name = row["TABLE_NAME"] + string.Empty;
                 table.Comment = row["TABLE_COMMENT"] + string.Empty;
+                table.ObjectType = row["OBJECT_TYPE"] + string.Empty;
                 db.Tables.Add(table);
             }
             return db;
@@ -176,7 +177,7 @@ numeric_scale as data_scale,
 is_nullable as nullable,
 column_default as data_default,
 column_comment as comments 
-from information_schema.columns where table_schema=@target_schema and table_name=@target_table";
+from information_schema.columns where table_schema=@target_schema and table_name=@target_table order by ordinal_position";
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql,
                 new MySqlParameter("@TARGET_SCHEMA", this.DatabaseName),

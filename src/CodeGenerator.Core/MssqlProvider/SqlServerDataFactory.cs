@@ -22,6 +22,7 @@ namespace CodeGenerator.Core.MssqlProvider
 
         public override DatabaseSchema GetDatabaseSchema()
         {
+            //TODO: query object type
             string sql = @"SELECT tbs.name ,ds.value as comments      
 FROM sysobjects tbs 
 LEFT JOIN sys.extended_properties ds ON ds.major_id=tbs.id and ds.minor_id=0

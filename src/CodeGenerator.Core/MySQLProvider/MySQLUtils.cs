@@ -13,7 +13,7 @@ namespace CodeGenerator.Core.MySQLProvider
             Type csharpType = null;
             switch (dbtype.ToUpper())
             {
-                case "DECIMAL":                
+                case "DECIMAL":
                 case "FLOAT":
                 case "DOUBLE":
                 case "REAL":
@@ -31,6 +31,9 @@ namespace CodeGenerator.Core.MySQLProvider
                     break;
                 case "BIGINT":
                     csharpType = typeof(long);
+                    break;
+                case "BIT":
+                    csharpType = typeof(bool);
                     break;
                 case "NVARCHAR":
                 case "VARCHAR":
@@ -61,7 +64,7 @@ namespace CodeGenerator.Core.MySQLProvider
 
         public static bool IsNumeric(string dbtype)
         {
-            string[] numericTypes = new string[] { "DECIMAL", "INTEGER", "FLOAT", "REAL", "NUMBER", "INT" };
+            string[] numericTypes = new string[] { "DECIMAL", "INTEGER", "FLOAT", "REAL", "NUMBER", "INT", "BIGINT", "DOUBLE", "SMALLINT", "INTEGER", "MEDIUMINT", "NUMERIC", "TINYINT" };
             return numericTypes.Contains(dbtype.ToUpper());
         }
     }
