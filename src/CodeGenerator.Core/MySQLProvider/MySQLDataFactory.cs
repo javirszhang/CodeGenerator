@@ -101,7 +101,7 @@ and tc.table_name=@table_name and tc.table_schema=@table_schema";
                 string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
                 key.ConstraintName = constraint_name;
                 IColumn pkCol = oracleTable.Columns.Find(it => it.Name == column_name);
-                pkCol.IsAutoIncrement = !string.IsNullOrEmpty(row["AUTO_INCREMENT"] + string.Empty);
+                //pkCol.IsAutoIncrement = !string.IsNullOrEmpty(row["AUTO_INCREMENT"] + string.Empty);
                 key.Columns.Add(pkCol);
             }
             oracleTable.PrimaryKey = key;
@@ -176,7 +176,8 @@ numeric_precision as data_precision,
 numeric_scale as data_scale,
 is_nullable as nullable,
 column_default as data_default,
-column_comment as comments 
+column_comment as comments,
+case when extra='auto_increment' then 1 else 0 end as auto_increment
 from information_schema.columns where table_schema=@target_schema and table_name=@target_table order by ordinal_position";
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql,
@@ -198,7 +199,8 @@ from information_schema.columns where table_schema=@target_schema and table_name
                     Length = row.GetInt("DATA_LENGTH"),
                     Scale = scale,
                     Table = oracleTable,
-                    IsNumeric = MySQLUtils.IsNumeric(data_type)
+                    IsNumeric = MySQLUtils.IsNumeric(data_type),
+                    IsAutoIncrement = Convert.ToInt32(row["auto_increment"]) == 1,
                 };
                 oracleTable.Columns.Add(column);
             }

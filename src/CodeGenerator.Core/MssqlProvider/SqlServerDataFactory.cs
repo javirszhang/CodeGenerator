@@ -23,9 +23,13 @@ namespace CodeGenerator.Core.MssqlProvider
         public override DatabaseSchema GetDatabaseSchema()
         {
             //TODO: query object type
-            string sql = @"SELECT tbs.name ,ds.value as comments      
+            //            string sql = @"SELECT tbs.name ,ds.value as comments      
+            //FROM sysobjects tbs 
+            //LEFT JOIN sys.extended_properties ds ON ds.major_id=tbs.id and ds.minor_id=0
+            //where tbs.xtype in ('U','V') order by tbs.name";
+            string sql = @"SELECT tbs.name ,case when tbs.xtype='V' then null else ds.value end as comments  ,tbs.xtype   
 FROM sysobjects tbs 
-LEFT JOIN sys.extended_properties ds ON ds.major_id=tbs.id and ds.minor_id=0
+LEFT JOIN (select major_id,minor_id,max(value) as value from sys.extended_properties group by major_id,minor_id) ds ON ds.major_id=tbs.id and ds.minor_id=0
 where tbs.xtype in ('U','V') order by tbs.name";
             DatabaseSchema schema = new DatabaseSchema();
             schema.Tables = new List<ITableSchema>();
@@ -36,7 +40,8 @@ where tbs.xtype in ('U','V') order by tbs.name";
                 var table = new SqlServerTableSchema
                 {
                     Name = row["name"] + string.Empty,
-                    Comment = row["comments"] + string.Empty
+                    Comment = row["comments"] + string.Empty,
+                    ObjectType = row["xtype"].ToString() == "U" ? "Table" : "View"
                 };
                 schema.Tables.Add(table);
             };
@@ -82,7 +87,8 @@ where tbs.xtype in ('U','V') and tbs.name=@TABLE_NAME";
             }
             oracleTable.Columns = new List<IColumn>();
             string sql = @"SELECT 
-a.colorder COLUMN_ID,a.name COLUMN_NAME,
+a.colorder COLUMN_ID,
+a.name COLUMN_NAME,
 (case when COLUMNPROPERTY( a.id,a.name,'IsIdentity')=1 then 1 else 0 end) AUTOINCREMENT,
 (case when (SELECT count(*) FROM sysobjects
 WHERE (name in (SELECT name FROM sysindexes
@@ -90,10 +96,14 @@ WHERE (id = a.id) AND (indid in
 (SELECT indid FROM sysindexkeys
 WHERE (id = a.id) AND (colid in
 (SELECT colid FROM syscolumns WHERE (id = a.id) AND (name = a.name)))))))
-AND (xtype = 'PK'))>0 then 1 else 0 end) PK,b.name DATA_TYPE,a.length BYTE_LEN,
+AND (xtype = 'PK'))>0 then 1 else 0 end) PK,
+b.name DATA_TYPE,
+a.length BYTE_LEN,
 COLUMNPROPERTY(a.id,a.name,'PRECISION') as DATA_LENGTH,
-isnull(COLUMNPROPERTY(a.id,a.name,'Scale'),0) as DATA_SCALE,(case when a.isnullable=1 then 1 else 0 end) NULLABLE,
-isnull(e.text,'') DATA_DEFAULT,isnull(g.[value], ' ') AS  COMMENTS
+isnull(COLUMNPROPERTY(a.id,a.name,'Scale'),0) as DATA_SCALE,
+(case when a.isnullable=1 then 1 else 0 end) NULLABLE,
+isnull(e.text,'') DATA_DEFAULT,
+isnull(g.[value], ' ') AS  COMMENTS
 FROM syscolumns a
 left join systypes b on a.xtype=b.xusertype
 inner join sysobjects d on a.id=d.id and d.xtype='U' and d.name<>'dtproperties'
@@ -124,7 +134,7 @@ order by a.id,a.colorder";
                     Scale = scale,
                     Table = oracleTable,
                     IsAutoIncrement = Convert.ToInt32(row["AUTOINCREMENT"]) == 1,
-                    IsNumeric = SqlServerUtils.IsNumeric(data_type)
+                    IsNumeric = SqlServerUtils.IsNumeric(data_type),
                 };
                 oracleTable.Columns.Add(column);
             }

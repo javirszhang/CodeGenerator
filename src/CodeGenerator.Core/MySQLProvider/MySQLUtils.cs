@@ -24,10 +24,7 @@ namespace CodeGenerator.Core.MySQLProvider
                 case "SMALLINT":
                 case "TINYINT":
                 case "MEDIUMINT":
-                    if (scale != 0)
-                        csharpType = typeof(decimal);
-                    else
-                        csharpType = typeof(int);
+                    csharpType = scale != 0 ? typeof(decimal) : typeof(int);
                     break;
                 case "BIGINT":
                     csharpType = typeof(long);
@@ -48,6 +45,7 @@ namespace CodeGenerator.Core.MySQLProvider
                 case "TINYTEXT":
                 case "MEDIUMTEXT":
                 case "BIGTEXT":
+                case "JSON":
                     csharpType = typeof(string); break;
                 case "DATE":
                 case "DATETIME":
