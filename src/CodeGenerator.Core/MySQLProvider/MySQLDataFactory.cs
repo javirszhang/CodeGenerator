@@ -67,12 +67,12 @@ namespace CodeGenerator.Core.MySQLProvider
         public override ITableSchema GetTableSchema(string table_name)
         {
             var db = GetDatabaseSchema();
-            MySQLTableSchema oracleTable = (MySQLTableSchema)db.Tables.Find(it => it.Name.Equals(table_name));
-            SetColumns(oracleTable);
-            SetForeignKey(oracleTable);
-            SetUniqueKey(oracleTable);
-            SetPrimaryKey(oracleTable);
-            return oracleTable;
+            MySQLTableSchema mysqlTable = (MySQLTableSchema)db.Tables.Find(it => it.Name.Equals(table_name));
+            SetColumns(mysqlTable);
+            SetForeignKey(mysqlTable);
+            SetUniqueKey(mysqlTable);
+            SetPrimaryKey(mysqlTable);
+            return mysqlTable;
         }
         public override DataTable GetTableData(string table_name)
         {
@@ -155,9 +155,9 @@ and tc.table_name=@table_name and tc.table_schema=@table_schema";
                 string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
                 key.ConstraintName = constraint_name;
                 key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
-                if (ContainForeignTable && key.ForeignTable == null)
+                string foreignTable = row["referenced_table_name"] + string.Empty;
+                if (ContainForeignTable && key.ForeignTable == null && !string.IsNullOrEmpty(foreignTable))
                 {
-                    string foreignTable = row["referenced_table_name"] + string.Empty;
                     string referenced_schema = row["referenced_table_schema"] + string.Empty;
                     var fac = new MySQLDataFactory(this._connectionString);
                     fac.ContainForeignTable = false;

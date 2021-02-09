@@ -47,7 +47,7 @@
             this.lb_selectedTables = new System.Windows.Forms.ListBox();
             this.lb_tables = new System.Windows.Forms.ListBox();
             this.txtSearchbox = new System.Windows.Forms.TextBox();
-            this.tableTrees = new System.Windows.Forms.TreeView();
+            this.tableTrees = new CustomControl.MyTreeView();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox4.SuspendLayout();
@@ -250,11 +250,16 @@
             // 
             // tableTrees
             // 
+            this.tableTrees.CheckBoxes = true;
             this.tableTrees.Location = new System.Drawing.Point(3, 221);
             this.tableTrees.Name = "tableTrees";
             this.tableTrees.Size = new System.Drawing.Size(628, 355);
             this.tableTrees.TabIndex = 4;
+            this.tableTrees.BeforeCheck += new System.Windows.Forms.TreeViewCancelEventHandler(this.tableTrees_BeforeCheck);
+            this.tableTrees.AfterCheck += new System.Windows.Forms.TreeViewEventHandler(this.tableTrees_AfterCheck);
             this.tableTrees.DrawNode += new System.Windows.Forms.DrawTreeNodeEventHandler(this.tableTrees_DrawNode);
+            this.tableTrees.BeforeSelect += new System.Windows.Forms.TreeViewCancelEventHandler(this.tableTrees_BeforeSelect);
+            this.tableTrees.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.tableTrees_AfterSelect);
             // 
             // Form1
             // 

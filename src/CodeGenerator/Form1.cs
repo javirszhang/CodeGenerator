@@ -144,28 +144,39 @@ namespace CodeGenerator
             System.Diagnostics.Process.Start(txtSavePath.Text);
         }
         private string DbConnectionName { get; set; }
-        private string TemplatePath { get; set; }
+        //private string TemplatePath { get; set; }
         private void btnGenerate_Click(object sender, EventArgs e)
         {
             this.DbConnectionName = cb_dbConnectionName.SelectedItem.ToString();
             ConnectionSetting setting = new ConnectionSettingCollection()[this.DbConnectionName];
             setting.ConnectionString = txtConnectionString.Text.Trim();
-            this.TemplatePath = (tableTrees.SelectedNode.Parent.Text + "/" == TreeRootName + "/" ? "" : tableTrees.SelectedNode.Parent.Text + "/") + tableTrees.SelectedNode.Text;
+            var checkedNodes = new List<TreeNode>();
+            FindCheckedNodes(tableTrees.Nodes, checkedNodes);
+            if (!checkedNodes.Any())
+            {
+                MessageBox.Show("请选择模板");
+                return;
+            }
+            var paths = new List<string>();
+            //GetPathFromTree(tableTrees.SelectedNode, paths);
+            GetPathFromTree(checkedNodes.First(), paths);
+            paths.Reverse();
+            string templatePath = string.Join("\\", paths);
             if (lb_selectedTables.Items.Count <= 0)
             {
                 MessageBox.Show("请选择您要生成的数据表");
                 return;
             }
-            if (tableTrees.SelectedNode == null || (tableTrees.SelectedNode.Nodes != null && tableTrees.SelectedNode.Nodes.Count > 0))
-            {
-                MessageBox.Show("选择的模版不是标准的velocity引擎语言");
-                return;
-            }
+            //if (tableTrees.SelectedNode == null || (tableTrees.SelectedNode.Nodes != null && tableTrees.SelectedNode.Nodes.Count > 0))
+            //{
+            //    MessageBox.Show("选择的模版不是标准的velocity引擎语言");
+            //    return;
+            //}
             string saveDirectory = txtSavePath.Text.Trim();
             Task.Factory.StartNew(() =>
             {
                 string errorMsg;
-                GenerateAll(saveDirectory, setting, lb_selectedTables.Items, this.TemplatePath, this.txtNamespace.Text, out errorMsg);
+                GenerateAll(saveDirectory, setting, lb_selectedTables.Items, templatePath, this.txtNamespace.Text, out errorMsg);
                 this.Invoke((MethodInvoker)delegate
                 {
                     lb_selectedTables.Items.Clear();
@@ -178,6 +189,34 @@ namespace CodeGenerator
                     MessageBox.Show(messageshow);
                 });
             });
+
+        }
+        private static void FindCheckedNodes(TreeNodeCollection nodes, List<TreeNode> checkedNodes)
+        {
+            if (nodes == null || nodes.Count <= 0)
+            {
+                return;
+            }
+            foreach (TreeNode n in nodes)
+            {
+                if (n.Checked && (n.Nodes == null || n.Nodes.Count <= 0))
+                {
+                    checkedNodes.Add(n);
+                }
+                else
+                {
+                    FindCheckedNodes(n.Nodes, checkedNodes);
+                }
+            }
+        }
+        private static void GetPathFromTree(TreeNode tree, List<string> paths)
+        {
+            if (tree.Text == TreeRootName)
+            {
+                return;
+            }
+            paths.Add(tree.Text);
+            GetPathFromTree(tree.Parent, paths);
         }
         public static bool GenerateAll(string saveDictory, ConnectionSetting setting, IList selectedTables, string templatePath, string @namespace, out string errorMsg)
         {
@@ -260,7 +299,13 @@ namespace CodeGenerator
         }
         protected static void LogText(string text)
         {
-            string sysDrive = string.Concat("D:\\CodeGenerator.log");
+            //string sysDrive = string.Concat("D:\\CodeGenerator.log");
+            string folder = Path.Combine(AppContext.BaseDirectory, "Log");
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+            string sysDrive = Path.Combine(folder, "CodeGenerator.log");
             File.AppendAllText(sysDrive, text + Environment.NewLine);
         }
 
@@ -318,8 +363,11 @@ namespace CodeGenerator
             if (node == null)
             {
                 node = new TreeNode(TreeRootName);
+                node.ForeColor = Color.Gray;
                 if (!Directory.Exists(path))
+                {
                     Directory.CreateDirectory(path);
+                }
                 DirectoryInfo di = new DirectoryInfo(path);
                 foreach (FileInfo file in di.GetFiles())
                 {
@@ -329,13 +377,16 @@ namespace CodeGenerator
                 {
                     TreeNode t = new TreeNode(item.Name);
                     node.Nodes.Add(t);
+                    t.ForeColor = Color.Gray;
                     ListDir(item.FullName, t);
                 }
             }
             else
             {
                 if (!Directory.Exists(path))
+                {
                     Directory.CreateDirectory(path);
+                }
                 DirectoryInfo di = new DirectoryInfo(path);
                 foreach (FileInfo file in di.GetFiles())
                 {
@@ -345,6 +396,7 @@ namespace CodeGenerator
                 {
                     TreeNode n = new TreeNode(item.Name);
                     node.Nodes.Add(n);
+                    n.ForeColor = Color.Gray;
                     ListDir(item.FullName, n);
                 }
             }
@@ -366,8 +418,13 @@ namespace CodeGenerator
 
         private void lb_tables_DoubleClick(object sender, EventArgs e)
         {
-            if (!lb_selectedTables.Items.Contains(lb_tables.SelectedItem))
-                lb_selectedTables.Items.Add(lb_tables.SelectedItem);
+            foreach (var item in lb_tables.SelectedItems)
+            {
+                if (!lb_selectedTables.Items.Contains(item))
+                {
+                    lb_selectedTables.Items.Add(lb_tables.SelectedItem);
+                }
+            }
         }
 
         private void lb_selectedTables_DoubleClick(object sender, EventArgs e)
@@ -386,7 +443,7 @@ namespace CodeGenerator
             //e.DrawDefault = true;
             //if (e.Node.Nodes != null && e.Node.Nodes.Count > 0)
             //{
-            //    e.Graphics.DrawString(e.Node.Text+"xx", e.Node.NodeFont, Brushes.Blue, e.Bounds.Right, e.Bounds.Top);
+            //    e.Graphics.DrawString(e.Node.Text + "xx", e.Node.NodeFont, Brushes.Blue, e.Bounds.Right, e.Bounds.Top);
             //}
         }
 
@@ -416,14 +473,70 @@ namespace CodeGenerator
 
         private void lb_tables_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (e.KeyChar == 13)
+            if (e.KeyChar != 13)
             {
-                foreach (var item in lb_tables.SelectedItems)
+                return;
+            }
+            foreach (var item in lb_tables.SelectedItems)
+            {
+                if (!lb_selectedTables.Items.Contains(item))
                 {
-                    if (!lb_selectedTables.Items.Contains(item))
-                        lb_selectedTables.Items.Add(item);
+                    lb_selectedTables.Items.Add(item);
                 }
             }
+        }
+
+        private void tableTrees_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            ClearTreeNodeForeColor(e.Node.TreeView.Nodes);
+            e.Node.ForeColor = Color.Red;
+        }
+        private void ClearTreeNodeForeColor(TreeNodeCollection nodes)
+        {
+            if (nodes == null || nodes.Count <= 0)
+            {
+                return;
+            }
+            foreach (TreeNode n in nodes)
+            {
+                n.ForeColor = Color.Black;
+                ClearTreeNodeForeColor(n.Nodes);
+            }
+        }
+        private void CheckTreeNodes(TreeNodeCollection nodes, bool check)
+        {
+            if (nodes == null || nodes.Count <= 0)
+            {
+                return;
+            }
+            foreach (TreeNode n in nodes)
+            {
+                n.Checked = check;
+                CheckTreeNodes(n.Nodes, check);
+            }
+        }
+        private void tableTrees_BeforeCheck(object sender, TreeViewCancelEventArgs e)
+        {
+            if (e.Node.Nodes != null && e.Node.Nodes.Count > 0)
+            {
+                e.Cancel = true;
+            }
+        }
+
+        private void tableTrees_AfterCheck(object sender, TreeViewEventArgs e)
+        {
+            if (e.Action != TreeViewAction.ByMouse)
+            {
+                return;
+            }
+            var check = e.Node.Checked;
+            CheckTreeNodes(e.Node.TreeView.Nodes, false);
+            e.Node.Checked = check;
+        }
+
+        private void tableTrees_BeforeSelect(object sender, TreeViewCancelEventArgs e)
+        {
+            e.Cancel = true;
         }
     }
 }
