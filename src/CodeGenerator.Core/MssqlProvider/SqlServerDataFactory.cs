@@ -63,11 +63,11 @@ LEFT JOIN sys.extended_properties ds ON ds.major_id=tbs.id and ds.minor_id=0
 where tbs.xtype in ('U','V') and tbs.name=@TABLE_NAME";
             DbHelper helper = new DbHelper(this._connectionString);
             var data = helper.ListBySql(sql, new SqlParameter("@TABLE_NAME", table_name));
-            string objectType = data.Rows[0]["OBJECT_TYPE"] + string.Empty;
+            string objectType = (data.Rows[0]["OBJECT_TYPE"] + string.Empty).Trim();
             SqlServerTableSchema oracleTable = new SqlServerTableSchema();
             oracleTable.Name = table_name;
             oracleTable.Comment = data.Rows[0]["COMMENTS"] + string.Empty;
-            oracleTable.ObjectType = objectType;
+            oracleTable.ObjectType = objectType == "V" ? "VIEW" : "TABLE";
             if (objectType == "V")
             {
                 oracleTable.ViewScript = data.Rows[0]["TEXT"].ToString();
@@ -106,7 +106,7 @@ isnull(e.text,'') DATA_DEFAULT,
 isnull(g.[value], ' ') AS  COMMENTS
 FROM syscolumns a
 left join systypes b on a.xtype=b.xusertype
-inner join sysobjects d on a.id=d.id and d.xtype='U' and d.name<>'dtproperties'
+inner join sysobjects d on a.id=d.id and (d.xtype='U' or d.xtype='V') and d.name<>'dtproperties'
 left join syscomments e on a.cdefault=e.id
 left join sys.extended_properties g on a.id=g.major_id AND a.colid=g.minor_id
 left join sys.extended_properties f on d.id=f.class and f.minor_id=0

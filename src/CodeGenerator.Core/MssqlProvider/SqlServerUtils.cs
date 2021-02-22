@@ -19,6 +19,7 @@ namespace CodeGenerator.Core.MssqlProvider
                 case "FLOAT":
                 case "REAL":
                 case "NUMBER":
+                case "NUMERIC":
                 case "INT":
                 case "TINYINT":
                 case "SMALLINT":
