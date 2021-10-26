@@ -24,15 +24,10 @@ namespace CodeGenerator.Core.Entities
                 try
                 {
                     string filename = "connectionsettings.config";
-                    string fullpath = AppDomain.CurrentDomain.BaseDirectory + filename;
-                    FileInfo file = new FileInfo(fullpath);
-                    if (file.Exists)
+                    string fullpath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
+                    if (File.Exists(fullpath))
                     {
-                        FileStream fs = file.Open(FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
-                        byte[] buffer = new byte[fs.Length];
-                        fs.Read(buffer, 0, buffer.Length);
-                        fs.Close();
-                        string text = Encoding.Default.GetString(buffer);
+                        string text = File.ReadAllText(fullpath);
                         XElement root = XElement.Parse(text);
                         foreach (var item in root.Elements("ConnectionSetting"))
                         {
@@ -43,10 +38,11 @@ namespace CodeGenerator.Core.Entities
                             list.Add(cs);
                         }
                     }
-                    return list;
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.StackTrace);
                     return list;
                 }
             }
@@ -61,16 +57,16 @@ namespace CodeGenerator.Core.Entities
         private void Save2File()
         {
             string filename = "connectionsettings.config";
-            string fullpath = AppDomain.CurrentDomain.BaseDirectory + filename;
+            string fullpath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
             StringBuilder sb = new StringBuilder();
             sb.Append("<ConnectionSettingCollection>\n");
             foreach (var item in this._settings)
             {
-                sb.Append("\t<ConnectionSetting>\n");
-                sb.Append("\t\t" + BuildXmlTag("Name", item.Name) + "\n");
-                sb.Append("\t\t" + BuildXmlTag("Provider", item.Provider.ToString()) + "\n");
-                sb.Append("\t\t" + BuildXmlTag("ConnectionString", item.ConnectionString) + "\n");
-                sb.Append("\t</ConnectionSetting>\n");
+                sb.Append("    <ConnectionSetting>\n");
+                sb.Append("        " + BuildXmlTag("Name", item.Name) + "\n");
+                sb.Append("        " + BuildXmlTag("Provider", item.Provider.ToString()) + "\n");
+                sb.Append("        " + BuildXmlTag("ConnectionString", item.ConnectionString, true) + "\n");
+                sb.Append("    </ConnectionSetting>\n");
             }
             sb.Append("</ConnectionSettingCollection>");
             FileInfo file = new FileInfo(fullpath);
@@ -78,8 +74,12 @@ namespace CodeGenerator.Core.Entities
                 file.Delete();
             File.AppendAllText(fullpath, sb.ToString());
         }
-        private static string BuildXmlTag(string name, string value)
+        private static string BuildXmlTag(string name, string value, bool cdata = false)
         {
+            if (cdata)
+            {
+                value = "<![CDATA[" + value + "]]>";
+            }
             return "<" + name + ">" + value + "</" + name + ">";
         }
         public IEnumerator GetEnumerator()

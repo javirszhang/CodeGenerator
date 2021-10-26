@@ -59,7 +59,7 @@ where tbs.xtype in ('U','V') order by tbs.name";
         {
             string sql = @"SELECT tbs.name ,ds.value as comments ,tbs.xtype as  OBJECT_TYPE ,null as TEXT   
 FROM sysobjects tbs 
-LEFT JOIN sys.extended_properties ds ON ds.major_id=tbs.id and ds.minor_id=0
+LEFT JOIN sys.extended_properties ds ON ds.major_id=tbs.id and ds.minor_id=0 and ds.[name]='MS_Description'
 where tbs.xtype in ('U','V') and tbs.name=@TABLE_NAME";
             DbHelper helper = new DbHelper(this._connectionString);
             var data = helper.ListBySql(sql, new SqlParameter("@TABLE_NAME", table_name));

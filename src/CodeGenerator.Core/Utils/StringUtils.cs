@@ -187,9 +187,18 @@ namespace CodeGenerator.Core.Utils
             string value = match.Groups[groupindex].Value;
             return string.IsNullOrWhiteSpace(value) ? null : value;
         }
+        public string PropertyTypeFromComment(string comment, string defaultValue, bool nullable)
+        {
+            string matchName = MatchValue(comment, "\\$(.+?)\\$", 1);
+            if (!string.IsNullOrEmpty(matchName) && nullable)
+            {
+                matchName += "?";
+            }
+            return matchName ?? defaultValue;
+        }
         public string PropertyTypeFromComment(string comment, string defaultValue)
         {
-            return MatchValue(comment, "\\$(.+?)\\$", 1) ?? defaultValue;
+            return this.PropertyTypeFromComment(comment, defaultValue, false);
         }
     }
 }
