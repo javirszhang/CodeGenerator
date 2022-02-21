@@ -1,12 +1,8 @@
-﻿using CodeGenerator.Core.Entities;
-using CodeGenerator.Core.Interfaces;
+﻿using CodeGenerator.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.OracleClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CodeGenerator.Core.OracleProvider
 {
@@ -78,7 +74,7 @@ WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY
             {
                 return;
             }
-            oracleTable.Columns = new List<IColumn>();
+            oracleTable.Columns = new ColumnCollection();
             string sql = @"SELECT TC.COLUMN_NAME,
        TC.DATA_TYPE,
        NVL(DECODE(TC.CHAR_LENGTH,0,TC.DATA_PRECISION,TC.CHAR_LENGTH),TC.DATA_LENGTH) AS DATA_LENGTH,
@@ -145,7 +141,7 @@ WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY
                 string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
 
                 Common.ForeignKey key = new Common.ForeignKey();
-                key.Columns = new List<IColumn>();
+                key.Columns = new ColumnCollection();
                 key.ConstraintName = constraint_name;
                 if (key.ForeignTable == null && ContainForeignTable)
                 {
@@ -188,7 +184,7 @@ WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY
                 if (key == null)
                 {
                     key = new Common.UniqueKey();
-                    key.Columns = new List<IColumn>();
+                    key.Columns = new ColumnCollection();
                     key.ConstraintName = constraint_name;
                     uniques.Add(key);
                 }
@@ -216,7 +212,7 @@ WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql, para);
             Common.PrimaryKey key = new Common.PrimaryKey();
-            key.Columns = new List<IColumn>();
+            key.Columns = new ColumnCollection();
             foreach (DataRow row in table.Rows)
             {
                 string column_name = row["COLUMN_NAME"] + string.Empty;

@@ -59,5 +59,11 @@ namespace CodeGenerator.Core.Interfaces
         /// 列所属表
         /// </summary>
         ITableSchema Table { get; set; }
+        string GetCamelCaseName();
+        string GetPropertyTypeName();
+        string GetPropertyTypeName(bool nullableReference);
+        string ToString(string format);
+        bool IsCreateTime();
+        string GetDefaultValue();
     }
 }

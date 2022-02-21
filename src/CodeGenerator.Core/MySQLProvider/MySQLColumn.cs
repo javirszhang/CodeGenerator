@@ -1,106 +1,70 @@
 ﻿using CodeGenerator.Core.Interfaces;
+using CodeGenerator.Core.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace CodeGenerator.Core.MySQLProvider
 {
-    public class MySQLColumn : IColumn
+    public class MySQLColumn : BaseColumn
     {
-        public string Comment
+        public override string GetDefaultValue()
         {
-            get;
-            set;
-        }
-
-        public Type CsharpType
-        {
-            get;
-            set;
-        }
-
-        public string DbType
-        {
-            get;
-            set;
-        }
-
-        public string DefaultValue
-        {
-            get;
-            set;
-        }
-
-        public bool IsNullable
-        {
-            get;
-            set;
-        }
-
-        public bool IsNumeric
-        {
-            get;
-            set;
-        }
-
-        public int Length
-        {
-            get;
-            set;
-        }
-
-        public string Name
-        {
-            get;
-            set;
-        }
-
-        string _PrimativeTypeName;
-        public string PrimativeTypeName
-        {
-            get
+            if (string.IsNullOrEmpty(DefaultValue))
             {
-                if (this.CsharpType == typeof(string))
-                    _PrimativeTypeName = "string";
-                else if (this.CsharpType == typeof(decimal))
-                    _PrimativeTypeName = "decimal";
-                else if (this.CsharpType == typeof(int))
-                    _PrimativeTypeName = "int";
-                else if (this.CsharpType == typeof(object))
-                    _PrimativeTypeName = "object";
-                else if (this.CsharpType == typeof(long))
-                    _PrimativeTypeName = "long";
-                else if (this.CsharpType == typeof(bool))
-                    _PrimativeTypeName = "bool";
-                else
-                    _PrimativeTypeName = this.CsharpType.Name;
-                if (this.CsharpType.IsValueType && IsNullable)
+                if (this.IsNullable)
                 {
-                    _PrimativeTypeName += "?";
+                    return "null";
                 }
-                return _PrimativeTypeName;
+                if (this.CsharpType == typeof(string))
+                {
+                    return "string.Empty";
+                }
+                else if (this.IsNumeric)
+                {
+                    return "0";
+                }
+                else if (this.CsharpType == typeof(DateTime))
+                {
+                    return "DateTime.Now";
+                }
+                else if (this.CsharpType == typeof(DateTime?))
+                {
+                    return "null";
+                }
+                else
+                {
+                    return "null";
+                }
             }
-            set
+            string pattern = @"^\((.+)\)$";
+            if (Regex.IsMatch(this.DefaultValue, pattern))
             {
-                _PrimativeTypeName = value;
+                this.DefaultValue = Regex.Replace(this.DefaultValue, pattern, "$1");
+                return GetDefaultValue();
             }
-        }
-        /// <summary>
-        /// 是否自动增长
-        /// </summary>
-        public bool IsAutoIncrement { get; set; }
-        public int Scale
-        {
-            get;
-            set;
-        }
-
-        public ITableSchema Table
-        {
-            get;
-            set;
+            this.DefaultValue = this.DefaultValue.Trim().TrimStart('\'').TrimEnd('\'').Replace('\n', ' ').Replace('\r', ' ');
+            if ("null".Equals(this.DefaultValue, StringComparison.CurrentCultureIgnoreCase))
+            {
+                return "DBNull.Value";
+            }
+            if (Regex.IsMatch(this.DefaultValue, "^0(\\.0+)?$"))
+            {
+                return "0";
+            }
+            if (this.DefaultValue.ToUpper().StartsWith("CURRENT_TIMESTAMP") || "0000-00-00 00:00:00".Equals(this.DefaultValue))
+            {
+                return "DateTime.Now";
+            }
+            else if (this.CsharpType == typeof(int) || this.CsharpType == typeof(decimal) || this.CsharpType == typeof(long))
+            {
+                return this.DefaultValue;
+            }
+            else
+                return "\"" + this.DefaultValue + "\"";
         }
     }
 }

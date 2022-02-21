@@ -9,7 +9,7 @@ namespace CodeGenerator.Core
 {
     public abstract class ConstraintKeyBase
     {
-        public List<IColumn> Columns { get; set; }
+        public ColumnCollection Columns { get; set; }
         public string ConstraintName { get; set; }
     }
 }

@@ -20,7 +20,7 @@ namespace CodeGenerator.Core.Utils
             {
                 if (string.IsNullOrEmpty(m.Value))
                     continue;
-                t += m.Value.Substring(0, 1).ToUpper() + m.Value.Substring(1, m.Value.Length - 1).ToLower() + "_";
+                t += Pascal(m.Value) + "_";
             }
             t = t.TrimEnd('_');
             return t;
@@ -34,7 +34,7 @@ namespace CodeGenerator.Core.Utils
             {
                 if (string.IsNullOrEmpty(m.Value))
                     continue;
-                t += m.Value.Substring(0, 1).ToUpper() + m.Value.Substring(1, m.Value.Length - 1).ToLower();
+                t += Pascal(m.Value);
                 if (includeSplit)
                 {
                     t += "_";
@@ -45,6 +45,33 @@ namespace CodeGenerator.Core.Utils
                 t = t.TrimEnd('_');
             }
             return t;
+        }
+        private static string Pascal(string s)
+        {
+            char first = s[0];
+            string rest = s.Substring(1);
+            bool isUpper = IsAllUpCase(rest);
+            if (char.IsUpper(first) && !isUpper)
+            {
+                return s;
+            }
+            return char.ToUpper(first) + (isUpper ? rest.ToLower() : rest);
+        }
+        /// <summary>
+        /// 检查字符串是否全部大写
+        /// </summary>
+        /// <param name="s"></param>
+        /// <returns></returns>
+        private static bool IsAllUpCase(string s)
+        {
+            foreach (var item in s)
+            {
+                if (char.IsLower(item))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
         public string SolveDefaultValue(string s, Type columnType, bool isNullable)
         {

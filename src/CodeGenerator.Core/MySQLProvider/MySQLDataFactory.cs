@@ -76,7 +76,7 @@ namespace CodeGenerator.Core.MySQLProvider
         }
         public override DataTable GetTableData(string table_name)
         {
-            string sql = "SELECT * FROM " + table_name;
+            string sql = "SELECT * FROM " + table_name + " LIMIT 1000";
             DbHelper helper = new DbHelper(this._connectionString);
             return helper.ListBySql(sql);
         }
@@ -94,7 +94,7 @@ and tc.table_name=@table_name and tc.table_schema=@table_schema";
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql, para0, para1);
             Common.PrimaryKey key = new Common.PrimaryKey();
-            key.Columns = new List<IColumn>();
+            key.Columns = new ColumnCollection();
             foreach (DataRow row in table.Rows)
             {
                 string column_name = row["COLUMN_NAME"] + string.Empty;
@@ -126,7 +126,7 @@ and tc.table_name=kc.table_name and tc.table_name=@table_name and tc.table_schem
                 if (key == null)
                 {
                     key = new Common.UniqueKey();
-                    key.Columns = new List<IColumn>();
+                    key.Columns = new ColumnCollection();
                     key.ConstraintName = constraint_name;
                     oracleTable.UniqueKeys.Add(key);
                 }
@@ -150,7 +150,7 @@ and tc.table_name=@table_name and tc.table_schema=@table_schema";
             foreach (DataRow row in table.Rows)
             {
                 Common.ForeignKey key = new Common.ForeignKey();
-                key.Columns = new List<IColumn>();
+                key.Columns = new ColumnCollection();
                 string column_name = row["COLUMN_NAME"] + string.Empty;
                 string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
                 key.ConstraintName = constraint_name;
@@ -183,7 +183,7 @@ from information_schema.columns where table_schema=@target_schema and table_name
             var table = helper.ListBySql(sql,
                 new MySqlParameter("@TARGET_SCHEMA", this.DatabaseName),
                 new MySqlParameter("@TARGET_TABLE", oracleTable.Name));
-            oracleTable.Columns = new List<IColumn>();
+            oracleTable.Columns = new ColumnCollection();
             foreach (DataRow row in table.Rows)
             {
                 int scale = row.GetInt("DATA_SCALE");

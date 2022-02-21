@@ -1,7 +1,6 @@
 ﻿using CodeGenerator.Core.Common;
 using CodeGenerator.Core.Interfaces;
 using CodeGenerator.Core.Utils;
-using Javirs.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -1,9 +1,5 @@
-﻿using NPOI.HPSF;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CodeGenerator.Core.MssqlProvider
 {
@@ -14,9 +10,11 @@ namespace CodeGenerator.Core.MssqlProvider
             Type csharpType;
             switch (dbtype.ToUpper())
             {
+                case "FLOAT":
+                    csharpType = typeof(float);
+                    break;
                 case "DECIMAL":
                 case "INTEGER":
-                case "FLOAT":
                 case "REAL":
                 case "NUMBER":
                 case "NUMERIC":

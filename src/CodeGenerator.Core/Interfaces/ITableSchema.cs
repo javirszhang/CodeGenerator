@@ -11,7 +11,7 @@ namespace CodeGenerator.Core.Interfaces
     {
         string Name { get; set; }
         string Comment { get; set; }
-        List<IColumn> Columns { get; set; }
+        ColumnCollection Columns { get; set; }
         List<ForeignKey> ForiegnKeys { get; set; }
         List<UniqueKey> UniqueKeys { get; set; }
         PrimaryKey PrimaryKey { get; set; }
@@ -23,5 +23,8 @@ namespace CodeGenerator.Core.Interfaces
         /// 视图脚本
         /// </summary>
         string ViewScript { get; set; }
+        ColumnCollection GetMandatoryColumns();
+        ColumnCollection GetNullableColumns();
+        string GetClassName();
     }
 }
