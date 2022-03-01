@@ -14,7 +14,7 @@ namespace CodeGenerator.Core
     {
         private string _template_name;
         private string _namespace;
-        private IConstant _constant;
+        private DefaultConstant _constant;
         private string _table_name;
         private string[] _tables;
         private Entities.ConnectionSetting _setting;
@@ -26,7 +26,7 @@ namespace CodeGenerator.Core
             this._setting = setting;
             this._tables = tables;
         }
-        protected IConstant Constant
+        protected DefaultConstant Constant
         {
             get
             {
@@ -51,7 +51,7 @@ namespace CodeGenerator.Core
                 templateFileFullPath = GetTemplateInfo(_template_name, out templateDirPath, out templateFileName);
                 List<ITableSchema> allTables = GetAllTableSchema(_setting, _tables, guid);
                 ITableSchema currentTable = allTables.Find(it => it.Name.Equals(_table_name));
-
+                this.Constant.TemplateName = templateFileName;
                 TemplateResolver th = new TemplateResolver(templateDirPath);
                 xUtils util = new xUtils();
                 th.Put("Tables", allTables);

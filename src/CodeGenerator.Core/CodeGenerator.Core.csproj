@@ -124,7 +124,6 @@
     <Compile Include="Interfaces\BaseTableSchema.cs" />
     <Compile Include="Interfaces\ColumnCollection.cs" />
     <Compile Include="Interfaces\IColumn.cs" />
-    <Compile Include="Interfaces\IConstant.cs" />
     <Compile Include="DataFactory.cs" />
     <Compile Include="Interfaces\ITableSchema.cs" />
     <Compile Include="MssqlProvider\DbHelper.cs" />

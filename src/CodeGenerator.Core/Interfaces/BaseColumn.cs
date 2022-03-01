@@ -152,6 +152,11 @@ namespace CodeGenerator.Core.Interfaces
             var util = new xUtils();
             return $"{GetPropertyTypeName()} {util.ToPascalCase(this.Name, false)}";
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="format">null,field,parameter</param>
+        /// <returns></returns>
         public string ToString(string format)
         {
             if (string.IsNullOrEmpty(format))
@@ -162,7 +167,7 @@ namespace CodeGenerator.Core.Interfaces
             string scene = array[0];
             bool nullable = array.Length > 1 && array[1] == "nullable" && this.IsNullable;
 
-            if (scene == "private")
+            if (scene == "field")
             {
                 return $"{GetPropertyTypeName(nullable)} _{GetCamelCaseName(true)}";
             }
@@ -180,6 +185,77 @@ namespace CodeGenerator.Core.Interfaces
                 "creation_time".Equals(this.Name, StringComparison.OrdinalIgnoreCase);
 
         }
-        public abstract string GetDefaultValue();
+        public virtual string GetDefaultValue()
+        {
+            if (this.Table.PrimaryKey.Columns.Contains(this) && !this.IsAutoIncrement && this.IsNumeric)
+            {
+                return "Snowflake.Next()";
+            }
+            string result = ResolveDefaultValue();
+            if (IsEnumField() && result != "0")
+            {
+                return $"({ResolvePropertyTypeFromComment()}){result}";
+            }
+            return result;
+        }
+        public bool IsEnumField()
+        {
+            return Regex.IsMatch(this.Comment, "\\$(.+?)\\$");
+        }
+        private string ResolveDefaultValue()
+        {
+            if (string.IsNullOrEmpty(DefaultValue))
+            {
+                if (this.IsNullable)
+                {
+                    return "null";
+                }
+                if (this.CsharpType == typeof(string))
+                {
+                    return "null";
+                }
+                else if (this.IsNumeric)
+                {
+                    return "0";
+                }
+                else if (this.CsharpType == typeof(DateTime))
+                {
+                    return "DateTime.Now";
+                }
+                else if (this.CsharpType == typeof(DateTime?))
+                {
+                    return "null";
+                }
+                else
+                {
+                    return "null";
+                }
+            }
+            string pattern = @"^\((.+)\)$";
+            if (Regex.IsMatch(this.DefaultValue, pattern))
+            {
+                this.DefaultValue = Regex.Replace(this.DefaultValue, pattern, "$1");
+                return GetDefaultValue();
+            }
+            this.DefaultValue = this.DefaultValue.Trim().TrimStart('\'').TrimEnd('\'').Replace('\n', ' ').Replace('\r', ' ');
+            if ("null".Equals(this.DefaultValue, StringComparison.CurrentCultureIgnoreCase))
+            {
+                return "null";
+            }
+            if (Regex.IsMatch(this.DefaultValue, "^0(\\.0+)?$"))
+            {
+                return "0";
+            }
+            if (this.DefaultValue.ToUpper().StartsWith("GETDATE") || "0000-00-00 00:00:00".Equals(this.DefaultValue))
+            {
+                return "DateTime.Now";
+            }
+            else if (this.IsNumeric)
+            {
+                return this.DefaultValue;
+            }
+            else
+                return "\"" + this.DefaultValue + "\"";
+        }
     }
 }

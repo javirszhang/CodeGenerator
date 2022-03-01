@@ -3,8 +3,6 @@ using CodeGenerator.Core.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CodeGenerator.Core.Interfaces
 {
@@ -21,8 +19,13 @@ namespace CodeGenerator.Core.Interfaces
 
         public ColumnCollection GetMandatoryColumns()
         {
-            return new ColumnCollection(this.Columns?.FindAll(a => !a.IsNullable && !a.IsCreateTime()));
-        }        
+            return new ColumnCollection(this.Columns?.FindAll(a => !a.IsNullable));
+        }
+        public ColumnCollection GetMandatoryColumns(bool includeCreateTime)
+        {
+            var mandatoryColumns = GetMandatoryColumns();
+            return includeCreateTime ? mandatoryColumns : new ColumnCollection(mandatoryColumns.FindAll(a => !a.IsCreateTime()));
+        }
         public ColumnCollection GetNullableColumns()
         {
             return new ColumnCollection(this.Columns?.FindAll(a => a.IsNullable));
@@ -35,6 +38,10 @@ namespace CodeGenerator.Core.Interfaces
                 return util.ToPascalCase(util.UnwrapTablePrefix(this.Name), false);
             }
             return util.ToPascalCase(this.Name, false);
+        }
+        public bool ContainEnumField()
+        {
+            return Columns.Any(x => x.IsEnumField());
         }
     }
 }

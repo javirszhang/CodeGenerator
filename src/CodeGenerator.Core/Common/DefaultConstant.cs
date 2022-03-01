@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace CodeGenerator.Core.Common
 {
-    public class DefaultConstant : IConstant
+    public class DefaultConstant
     {
         public DefaultConstant(string @namespace)
         {
@@ -42,5 +42,7 @@ namespace CodeGenerator.Core.Common
             get;
             set;
         }
+
+        public string TemplateName { get; set; }
     }
 }

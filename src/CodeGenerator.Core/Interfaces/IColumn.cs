@@ -65,5 +65,6 @@ namespace CodeGenerator.Core.Interfaces
         string ToString(string format);
         bool IsCreateTime();
         string GetDefaultValue();
+        bool IsEnumField();
     }
 }

@@ -312,7 +312,6 @@ namespace CodeGenerator
         private static bool Generate(object obj, string guid, string @namespace)
         {
             GenerateParameter para = obj as GenerateParameter;
-            IConstant constant = new Constant(@namespace);
             CodeBuilder builder = new CodeBuilder(para.Tables, para.TableName, para.TemplatePath, @namespace, para.Setting);
             bool result = builder.Build(para.SavePath, guid);
             LogText(string.Format("{4}\t{6}\tGenerate Table {0}，Result is {1}，Build Path at {2},Template is {7}{3}{5}", para.TableName, result, para.SavePath, Environment.NewLine, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
