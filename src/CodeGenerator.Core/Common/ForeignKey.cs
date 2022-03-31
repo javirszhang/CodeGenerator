@@ -9,6 +9,6 @@ namespace CodeGenerator.Core.Common
 {
     public class ForeignKey : ConstraintKeyBase
     {
-        public ITableSchema ForeignTable { get; set; }
+        public IForeignTable ForeignTable { get; set; }
     }
 }

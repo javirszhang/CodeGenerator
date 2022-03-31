@@ -123,8 +123,10 @@
     <Compile Include="Interfaces\BaseColumn.cs" />
     <Compile Include="Interfaces\BaseTableSchema.cs" />
     <Compile Include="Interfaces\ColumnCollection.cs" />
+    <Compile Include="Interfaces\ForeignTable.cs" />
     <Compile Include="Interfaces\IColumn.cs" />
     <Compile Include="DataFactory.cs" />
+    <Compile Include="Interfaces\IForeignTable.cs" />
     <Compile Include="Interfaces\ITableSchema.cs" />
     <Compile Include="MssqlProvider\DbHelper.cs" />
     <Compile Include="MssqlProvider\SqlServerColumn.cs" />

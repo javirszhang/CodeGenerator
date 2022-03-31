@@ -194,7 +194,9 @@ namespace CodeGenerator.Core.Interfaces
             string result = ResolveDefaultValue();
             if (IsEnumField() && result != "0")
             {
-                return $"({ResolvePropertyTypeFromComment()}){result}";
+                return Regex.IsMatch(result, "^\\d+$") ?
+                    $"({ResolvePropertyTypeFromComment()}){result}" :
+                    $"Enum.Parse<{ResolvePropertyTypeFromComment()}>({result})";
             }
             return result;
         }
@@ -222,37 +224,44 @@ namespace CodeGenerator.Core.Interfaces
                 {
                     return "DateTime.Now";
                 }
-                else if (this.CsharpType == typeof(DateTime?))
+                else if (this.CsharpType == typeof(bool))
                 {
-                    return "null";
+                    return "false";
                 }
                 else
                 {
                     return "null";
                 }
             }
+            this.DefaultValue = this.DefaultValue.Trim().Trim('\'').Replace("\n", "").Replace("\r", "");
             string pattern = @"^\((.+)\)$";
             if (Regex.IsMatch(this.DefaultValue, pattern))
             {
                 this.DefaultValue = Regex.Replace(this.DefaultValue, pattern, "$1");
                 return GetDefaultValue();
             }
-            this.DefaultValue = this.DefaultValue.Trim().TrimStart('\'').TrimEnd('\'').Replace('\n', ' ').Replace('\r', ' ');
             if ("null".Equals(this.DefaultValue, StringComparison.CurrentCultureIgnoreCase))
             {
                 return "null";
             }
-            if (Regex.IsMatch(this.DefaultValue, "^0(\\.0+)?$"))
+            if (Regex.IsMatch(this.DefaultValue, "^0(\\.0+)?$"))//0.00
             {
-                return "0";
+                this.DefaultValue = "0";
             }
-            if (this.DefaultValue.ToUpper().StartsWith("GETDATE") || "0000-00-00 00:00:00".Equals(this.DefaultValue))
+            bool msDate = this.DefaultValue.ToUpper().Contains("GETDATE");
+            bool oraDate = this.DefaultValue.ToUpper().Contains("SYSDATE");
+            bool myDate = this.DefaultValue.ToUpper().Contains("CURRENT_TIMESTAMP");
+            if (msDate || oraDate || myDate || "0000-00-00 00:00:00".Equals(this.DefaultValue))
             {
                 return "DateTime.Now";
             }
             else if (this.IsNumeric)
             {
                 return this.DefaultValue;
+            }
+            else if (this.CsharpType == typeof(bool))
+            {
+                return this.DefaultValue == "1" ? "true" : "false";
             }
             else
                 return "\"" + this.DefaultValue + "\"";

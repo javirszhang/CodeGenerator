@@ -102,7 +102,7 @@ WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY
                     Comment = row["COMMENTS"] + string.Empty,
                     CsharpType = OracleUtils.TransformDatabaseType(data_type, scale),
                     DbType = data_type,
-                    DefaultValue = (row["DATA_DEFAULT"] + string.Empty).Trim('\r','\n'),
+                    DefaultValue = (row["DATA_DEFAULT"] + string.Empty).Trim('\r', '\n'),
                     IsNullable = (row["NULLABLE"] + string.Empty) == "Y",
                     Length = Convert.ToInt32(row["DATA_LENGTH"]),
                     Scale = scale,
@@ -148,7 +148,7 @@ WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY
                     string forignTable = row["FOREIGN_TABLE_NAME"] + string.Empty;
                     var fac = new OracleDataFactory(this._connectionString);
                     fac.ContainForeignTable = false;
-                    key.ForeignTable = fac.GetTableSchema(forignTable);
+                    key.ForeignTable = new ForeignTable(fac.GetTableSchema(forignTable), ""); //TODO: ORACLE FOREIGN KEY
                 }
                 key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
                 oracleTable.ForiegnKeys.Add(key);

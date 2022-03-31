@@ -148,10 +148,12 @@ order by a.id,a.colorder";
             }
             string sql = @"select obj.name CONSTRAINT_NAME,
 main_col.name COLUMN_NAME,
-sub.name FOREIGN_TABLE_NAME 
+sub.name FOREIGN_TABLE_NAME,
+ft_col.[name] as FOREIGN_COLUMN_NAME
 from sysforeignkeys fk left join sys.tables main on fk.fkeyid=main.object_id
 left join sys.tables sub on sub.object_id=fk.rkeyid
 left join syscolumns main_col on fk.fkey=main_col.colid and fk.fkeyid=main_col.id
+left join syscolumns ft_col on fk.rkey=ft_col.colid and fk.rkeyid=ft_col.id
 left join sysobjects obj on obj.id=fk.constid
 where main.name=@TABLE_NAME";
             var para = new SqlParameter("@TABLE_NAME", oracleTable.Name.ToUpper());
@@ -173,7 +175,7 @@ where main.name=@TABLE_NAME";
                     string forignTable = row["FOREIGN_TABLE_NAME"] + string.Empty;
                     var fac = new SqlServerDataFactory(this._connectionString);
                     fac.ContainForeignTable = false;
-                    key.ForeignTable = fac.GetTableSchema(forignTable);
+                    key.ForeignTable = new ForeignTable(fac.GetTableSchema(forignTable), row["FOREIGN_COLUMN_NAME"] + string.Empty);
                 }
                 key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
                 oracleTable.ForiegnKeys.Add(key);

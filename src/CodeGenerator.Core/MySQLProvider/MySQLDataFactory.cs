@@ -137,11 +137,11 @@ and tc.table_name=kc.table_name and tc.table_name=@table_name and tc.table_schem
 
         private void SetForeignKey(MySQLTableSchema oracleTable)
         {
-            string sql = @"select tc.table_name, tc.constraint_name,kc.column_name,kc.referenced_table_name,kc.referenced_table_schema  
+            string sql = @"select tc.table_name, tc.constraint_name,kc.column_name,kc.referenced_table_name,kc.referenced_table_schema,kc.referenced_column_name  
 from information_schema.table_constraints tc,information_schema.key_column_usage kc 
 where tc.constraint_type='FOREIGN KEY' and tc.constraint_name=kc.constraint_name 
 and tc.table_schema=kc.table_schema and tc.table_name=kc.table_name
-and tc.table_name=@table_name and tc.table_schema=@table_schema";
+and tc.table_schema=@table_schema and tc.table_name=@table_name";
             MySqlParameter para0 = new MySqlParameter("@table_name", oracleTable.Name);
             MySqlParameter para1 = new MySqlParameter("@table_schema", this.DatabaseName);
             DbHelper helper = new DbHelper(this._connectionString);
@@ -162,7 +162,7 @@ and tc.table_name=@table_name and tc.table_schema=@table_schema";
                     var fac = new MySQLDataFactory(this._connectionString);
                     fac.ContainForeignTable = false;
                     fac._db_name = referenced_schema;
-                    key.ForeignTable = fac.GetTableSchema(foreignTable);
+                    key.ForeignTable = new ForeignTable(fac.GetTableSchema(foreignTable), row["referenced_column_name"] + string.Empty);
                 }
                 oracleTable.ForiegnKeys.Add(key);
             }
