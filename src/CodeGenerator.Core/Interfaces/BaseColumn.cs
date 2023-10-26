@@ -1,4 +1,5 @@
-﻿using CodeGenerator.Core.Utils;
+﻿using CodeGenerator.Core.Common;
+using CodeGenerator.Core.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,10 +11,17 @@ namespace CodeGenerator.Core.Interfaces
 {
     public abstract class BaseColumn : IColumn
     {
+        private readonly DataFactory _factory;
+        public BaseColumn(ITableSchema table, DataFactory factory)
+        {
+            this.Table = table;
+            this._factory = factory;
+        }
+        private string _comment;
         public string Comment
         {
-            get;
-            set;
+            get { return _comment; }
+            set { _comment = value; AnalysisComment(value); }
         }
 
         public Type CsharpType
@@ -114,6 +122,8 @@ namespace CodeGenerator.Core.Interfaces
             var name = util.ToPascalCase(this.Name, false);
             return smallCamel ? name.Substring(0, 1).ToLower() + name.Substring(1) : name;
         }
+        public string GetBigCamelName() => GetCamelCaseName();
+        public string GetSmallCamelName() => GetCamelCaseName(true);
         public string GetPropertyTypeName()
         {
             return GetPropertyTypeName(false);
@@ -265,6 +275,25 @@ namespace CodeGenerator.Core.Interfaces
             }
             else
                 return "\"" + this.DefaultValue + "\"";
+        }
+
+        private void AnalysisComment(string comment)
+        {
+            string pattern = "ref\\(([\\w_]+)\\.([\\w_]+)\\)";
+            var matches = Regex.Match(comment, pattern);
+            if (!matches.Success)
+            {
+                return;
+            }
+            string foreignTableName = matches.Groups[1].Value;
+            string foreignColumn = matches.Groups[2].Value;
+            if (this.Table.ForeignKeys.Any(x => x.Columns.Contains(this)))
+            {
+                return;
+            }
+            var foreignTab = _factory.GetTableSchema(foreignTableName);
+            var key = new ForeignKey($"virtual_fk_from_comment_{this.Name}", this, foreignTab, foreignTab.Columns.Find(c => c.Name.Equals(foreignColumn, StringComparison.OrdinalIgnoreCase)));
+            this.Table.ForeignKeys.Add(key);
         }
     }
 }

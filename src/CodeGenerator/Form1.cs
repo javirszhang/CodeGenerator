@@ -1,33 +1,116 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using System.IO;
+﻿using CodeGenerator.Core;
 using CodeGenerator.Core.Entities;
-using CodeGenerator.Core;
-using CodeGenerator.Core.Interfaces;
-using System.Threading;
-using System.Xml.Linq;
-using System.Threading.Tasks;
+using CredentialManagement;
+using LibGit2Sharp;
+using System;
 using System.Collections;
-//using Microsoft.Data.ConnectionUI;
+using System.Collections.Generic;
+using System.Data;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Xml.Linq;
 
 namespace CodeGenerator
 {
     public partial class Form1 : Form
     {
         private string _savePath;
+        private readonly Thread versionCheckThread;
         public Form1()
         {
             InitializeComponent();
             _savePath = txtSavePath.Text.Trim();
             txtNamespace.Text = "Winner.****.DataAccess";
             ExtendFunctions.Progress += ShowProgress;
+            this.Shown += Form1_Shown;
+            versionCheckThread = new Thread(CheckAppUpgrade);
+            versionCheckThread.IsBackground = true;
+            versionCheckThread.Start();
         }
+        private void CheckAppUpgrade()
+        {
+            try
+            {
+                string directory = AppDomain.CurrentDomain.BaseDirectory;
+                var repo = new Repository(directory);
+                var url = repo.Config.Get<string>("remote.origin.url");
+                UsernamePasswordCredentials credential = GetGitCredential(url?.Value);
+                repo.Network.Fetch("origin", new string[] { "master" }, new FetchOptions { CredentialsProvider = (a, b, c) => credential });
+                Branch master = repo.Branches["master"];
+                int behindCommitCount = master.TrackingDetails.BehindBy.GetValueOrDefault();
+                if (behindCommitCount <= 0)
+                {
+                    this.Invoke((MethodInvoker)delegate
+                    {
+                        this.Text += "（已是最新版）";
+                    });
+                    return;
+                }
+                Branch remoteMaster = repo.Branches["origin/master"];
+                var behindCommits = repo.Commits.QueryBy(new CommitFilter
+                {
+                    IncludeReachableFrom = remoteMaster.Tip,
+                    ExcludeReachableFrom = master.Tip
+                }).OrderByDescending(commit => commit.Author.When);
+                string text = string.Join("", behindCommits.Select(x => string.Concat(x.Author.When.ToString("yyyy-MM-dd"), "  ", x.Message)));
+                text += Environment.NewLine + Environment.NewLine + "选择确定更新会关闭程序，打开命令窗开始更新";
+                this.Invoke((MethodInvoker)delegate
+                {
+                    var result = MessageBox.Show(text, "有内容需要更新", MessageBoxButtons.OKCancel);
+                    if (result == System.Windows.Forms.DialogResult.OK)
+                    {
+                        ProcessStartInfo cmd = new ProcessStartInfo();
+                        cmd.Arguments = "/C git pull";
+                        cmd.FileName = "cmd.exe";
+                        cmd.WorkingDirectory = directory;
+                        cmd.UseShellExecute = true;
+                        Process.Start(cmd);
+                        Application.Exit();
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                LogException("检查是否有更新出现异常，当前运行目录：" + AppDomain.CurrentDomain.BaseDirectory, ex);
+            }
+        }
+        public void LogException(string message, Exception ex)
+        {
+            LogText(message + "，错误信息：" + ex.Message);
+            LogText(ex.StackTrace);
+            if (ex.InnerException != null)
+            {
+                LogException("内部错误", ex.InnerException);
+            }
+        }
+        private UsernamePasswordCredentials GetGitCredential(string url)
+        {
+            using (Credential credential = new Credential())
+            {
+                Uri uri = new Uri(url);
+                string authority = string.Concat(uri.Scheme, "://", uri.Host);
+                credential.Target = $"git:{authority}";
+                bool load = credential.Load();
+                return !load ? null : new UsernamePasswordCredentials { Username = credential.Username, Password = credential.Password };
+            }
+        }
+        private void Form1_Shown(object sender, EventArgs e)
+        {
+            //VersionChecker versionChecker = new VersionChecker();
+            //if (versionChecker.HasUpgrade())
+            //{
+            //    this.Invoke((MethodInvoker)delegate ()
+            //    {                    
+            //        MessageBox.Show(this,"检测到更新呢");
+            //    });
+            //}
+        }
+
         public Form1(string[] args) : this()
         {
             if (args.Length >= 2)
@@ -190,6 +273,13 @@ namespace CodeGenerator
                 });
             });
 
+        }
+        private void ShowMessageFromAsync(string text)
+        {
+            this.Invoke((MethodInvoker)delegate
+            {
+                MessageBox.Show(text);
+            });
         }
         private static void FindCheckedNodes(TreeNodeCollection nodes, List<TreeNode> checkedNodes)
         {

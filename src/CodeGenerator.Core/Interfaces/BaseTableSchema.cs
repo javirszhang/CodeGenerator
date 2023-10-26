@@ -10,10 +10,10 @@ namespace CodeGenerator.Core.Interfaces
     {
         public string Name { get; set; }
         public string Comment { get; set; }
-        public ColumnCollection Columns { get; set; }
-        public List<ForeignKey> ForiegnKeys { get; set; }
+        public ColumnCollection Columns { get; set; } = new ColumnCollection();
+        public List<ForeignKey> ForeignKeys { get; set; } = new List<ForeignKey>();
         public PrimaryKey PrimaryKey { get; set; }
-        public List<UniqueKey> UniqueKeys { get; set; }
+        public List<UniqueKey> UniqueKeys { get; set; } = new List<UniqueKey>();
         public string ObjectType { get; set; }
         public string ViewScript { get; set; }
 
@@ -38,6 +38,13 @@ namespace CodeGenerator.Core.Interfaces
                 return util.ToPascalCase(util.UnwrapTablePrefix(this.Name), false);
             }
             return util.ToPascalCase(this.Name, false);
+        }
+        public string GetBigCamelName() => GetClassName();
+        public string GetSmallCamelName()
+        {
+            string name = GetClassName();
+            return name.Substring(0, 1).ToLower() + name.Substring(1);
+
         }
         public bool ContainEnumField()
         {

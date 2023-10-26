@@ -12,7 +12,7 @@ namespace CodeGenerator.Core.Interfaces
         string Name { get; set; }
         string Comment { get; set; }
         ColumnCollection Columns { get; set; }
-        List<ForeignKey> ForiegnKeys { get; set; }
+        List<ForeignKey> ForeignKeys { get; set; }
         List<UniqueKey> UniqueKeys { get; set; }
         PrimaryKey PrimaryKey { get; set; }
         /// <summary>
@@ -26,5 +26,7 @@ namespace CodeGenerator.Core.Interfaces
         ColumnCollection GetMandatoryColumns();
         ColumnCollection GetNullableColumns();
         string GetClassName();
+        string GetBigCamelName();
+        string GetSmallCamelName();
     }
 }

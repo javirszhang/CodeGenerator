@@ -11,6 +11,8 @@ namespace CodeGenerator.Core.MySQLProvider
 {
     public class MySQLColumn : BaseColumn
     {
-
+        public MySQLColumn(ITableSchema table, DataFactory factory) : base(table, factory)
+        {
+        }
     }
 }

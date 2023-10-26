@@ -60,6 +60,8 @@ namespace CodeGenerator.Core.Interfaces
         /// </summary>
         ITableSchema Table { get; set; }
         string GetCamelCaseName();
+        string GetBigCamelName();
+        string GetSmallCamelName();
         string GetPropertyTypeName();
         string GetPropertyTypeName(bool nullableReference);
         string ToString(string format);

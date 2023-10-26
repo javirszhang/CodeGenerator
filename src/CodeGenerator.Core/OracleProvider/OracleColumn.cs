@@ -11,6 +11,8 @@ namespace CodeGenerator.Core.OracleProvider
 {
     public class OracleColumn : BaseColumn
     {
-
+        public OracleColumn(ITableSchema table, DataFactory factory) : base(table, factory)
+        {
+        }
     }
 }

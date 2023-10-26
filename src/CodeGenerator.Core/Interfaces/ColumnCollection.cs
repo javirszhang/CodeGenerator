@@ -20,6 +20,6 @@ namespace CodeGenerator.Core.Interfaces
         {
             IEnumerable<string> args = this.Select(x => x.ToString("parameter"));
             return string.Join(", ", args);
-        }
+        }        
     }
 }

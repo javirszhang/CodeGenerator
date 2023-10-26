@@ -11,6 +11,10 @@ namespace CodeGenerator.Core
 {
     public abstract class DataFactory
     {
+        public bool ContainForeignTable
+        {
+            get; set;
+        }
         protected string _connectionString;
         public DataFactory(string connString)
         {

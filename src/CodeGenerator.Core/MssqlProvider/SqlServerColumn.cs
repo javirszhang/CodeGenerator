@@ -11,5 +11,8 @@ namespace CodeGenerator.Core.MssqlProvider
 {
     public class SqlServerColumn : BaseColumn
     {
+        public SqlServerColumn(ITableSchema table, DataFactory factory) : base(table, factory)
+        {
+        }
     }
 }

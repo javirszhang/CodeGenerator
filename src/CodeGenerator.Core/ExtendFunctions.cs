@@ -20,10 +20,14 @@ namespace CodeGenerator.Core
         }
         public static int GetInt(this DataRow row, string columnName)
         {
+            return row.GetInt(columnName, 0);
+        }
+        public static int GetInt(this DataRow row, string columnName, int defaultValue)
+        {
             object b = row[columnName];
-            if (b == DBNull.Value || b == null)
+            if (b == DBNull.Value || b == null || string.IsNullOrEmpty(b.ToString()))
             {
-                return 0;
+                return defaultValue;
             }
             return Convert.ToInt32(b);
         }

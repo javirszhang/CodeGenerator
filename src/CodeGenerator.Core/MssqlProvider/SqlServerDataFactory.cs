@@ -1,4 +1,5 @@
-﻿using CodeGenerator.Core.Interfaces;
+﻿using CodeGenerator.Core.Common;
+using CodeGenerator.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -8,10 +9,6 @@ namespace CodeGenerator.Core.MssqlProvider
 {
     public class SqlServerDataFactory : DataFactory
     {
-        public bool ContainForeignTable
-        {
-            get; set;
-        }
         public SqlServerDataFactory(string connString) : base(connString)
         {
             this.ContainForeignTable = true;
@@ -52,37 +49,13 @@ where tbs.xtype in ('U','V') order by tbs.name";
             return helper.ListBySql(sql);
         }
 
-        public override ITableSchema GetTableSchema(string table_name)
+        private void SetColumns(SqlServerTableSchema mssqlTable)
         {
-            string sql = @"SELECT tbs.name ,ds.value as comments ,tbs.xtype as  OBJECT_TYPE ,null as TEXT   
-FROM sysobjects tbs 
-LEFT JOIN sys.extended_properties ds ON ds.major_id=tbs.id and ds.minor_id=0 and ds.[name]='MS_Description'
-where tbs.xtype in ('U','V') and tbs.name=@TABLE_NAME";
-            DbHelper helper = new DbHelper(this._connectionString);
-            var data = helper.ListBySql(sql, new SqlParameter("@TABLE_NAME", table_name));
-            string objectType = (data.Rows[0]["OBJECT_TYPE"] + string.Empty).Trim();
-            SqlServerTableSchema oracleTable = new SqlServerTableSchema();
-            oracleTable.Name = table_name;
-            oracleTable.Comment = data.Rows[0]["COMMENTS"] + string.Empty;
-            oracleTable.ObjectType = objectType == "V" ? "VIEW" : "TABLE";
-            if (objectType == "V")
-            {
-                oracleTable.ViewScript = data.Rows[0]["TEXT"].ToString();
-            }
-            SetColumns(oracleTable);
-            SetForeignKey(oracleTable);
-            SetUniqueKey(oracleTable);
-            SetPrimaryKey(oracleTable);
-            return oracleTable;
-        }
-
-        private void SetColumns(SqlServerTableSchema oracleTable)
-        {
-            if (oracleTable == null)
+            if (mssqlTable == null)
             {
                 return;
             }
-            oracleTable.Columns = new ColumnCollection();
+            mssqlTable.Columns = new ColumnCollection();
             string sql = @"SELECT 
 a.colorder COLUMN_ID,
 a.name COLUMN_NAME,
@@ -111,7 +84,7 @@ where b.name is not null
 and d.name=@table_name 
 order by a.id,a.colorder";
             List<IColumn> columns = new List<IColumn>();
-            var para = new SqlParameter("@table_name", oracleTable.Name);
+            var para = new SqlParameter("@table_name", mssqlTable.Name);
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql, para);
             foreach (DataRow row in table.Rows)
@@ -119,7 +92,7 @@ order by a.id,a.colorder";
                 int scale = Convert.ToInt32(row["DATA_SCALE"]);
                 string data_type = row["DATA_TYPE"] + string.Empty;
                 int len = Convert.ToInt32(row["DATA_LENGTH"]);
-                var column = new SqlServerColumn
+                var column = new SqlServerColumn(mssqlTable, this)
                 {
                     Name = row["COLUMN_NAME"] + string.Empty,
                     Comment = row["COMMENTS"] + string.Empty,
@@ -129,22 +102,22 @@ order by a.id,a.colorder";
                     IsNullable = (row["NULLABLE"] + string.Empty) == "1",
                     Length = len,
                     Scale = scale,
-                    Table = oracleTable,
+                    Table = mssqlTable,
                     IsAutoIncrement = Convert.ToInt32(row["AUTOINCREMENT"]) == 1,
                     IsNumeric = SqlServerUtils.IsNumeric(data_type),
                 };
-                oracleTable.Columns.Add(column);
+                mssqlTable.Columns.Add(column);
             }
         }
-        private void SetForeignKey(SqlServerTableSchema oracleTable)
+        private void SetForeignKey(SqlServerTableSchema sqlserverTable)
         {
-            if (oracleTable == null)
+            if (sqlserverTable == null)
             {
                 return;
             }
-            if (oracleTable.Columns == null || oracleTable.Columns.Count <= 0)
+            if (sqlserverTable.Columns == null || sqlserverTable.Columns.Count <= 0)
             {
-                SetColumns(oracleTable);
+                SetColumns(sqlserverTable);
             }
             string sql = @"select obj.name CONSTRAINT_NAME,
 main_col.name COLUMN_NAME,
@@ -156,29 +129,28 @@ left join syscolumns main_col on fk.fkey=main_col.colid and fk.fkeyid=main_col.i
 left join syscolumns ft_col on fk.rkey=ft_col.colid and fk.rkeyid=ft_col.id
 left join sysobjects obj on obj.id=fk.constid
 where main.name=@TABLE_NAME";
-            var para = new SqlParameter("@TABLE_NAME", oracleTable.Name.ToUpper());
+            var para = new SqlParameter("@TABLE_NAME", sqlserverTable.Name.ToUpper());
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql, para);
-
-            oracleTable.ForiegnKeys = new List<Common.ForeignKey>();
 
             foreach (DataRow row in table.Rows)
             {
                 string column_name = row["COLUMN_NAME"] + string.Empty;
+                IColumn thisColumn = sqlserverTable.Columns.Find(x => x.Name == column_name);
                 string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
-
-                Common.ForeignKey key = new Common.ForeignKey();
-                key.Columns = new ColumnCollection();
-                key.ConstraintName = constraint_name;
-                if (key.ForeignTable == null && ContainForeignTable)
+                ITableSchema ftab = null;
+                IColumn fcol = null;
+                if (ContainForeignTable)
                 {
                     string forignTable = row["FOREIGN_TABLE_NAME"] + string.Empty;
+                    string foreignColumnName = row["FOREIGN_COLUMN_NAME"] + string.Empty;
                     var fac = new SqlServerDataFactory(this._connectionString);
                     fac.ContainForeignTable = false;
-                    key.ForeignTable = new ForeignTable(fac.GetTableSchema(forignTable), row["FOREIGN_COLUMN_NAME"] + string.Empty);
+                    ftab = fac.GetTableSchema(forignTable);
+                    fcol = ftab.Columns.Find(c => c.Name.Equals(foreignColumnName, StringComparison.OrdinalIgnoreCase));
                 }
-                key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
-                oracleTable.ForiegnKeys.Add(key);
+                var key = new ForeignKey(constraint_name, thisColumn, ftab, fcol);
+                sqlserverTable.ForeignKeys.Add(key);
             }
         }
         private void SetUniqueKey(SqlServerTableSchema oracleTable)
@@ -249,6 +221,30 @@ FROM SYS.INDEXES IDX JOIN
                 key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
             }
             oracleTable.PrimaryKey = key;
+        }
+
+        public override ITableSchema GetTableSchema(string table_name)
+        {
+            string sql = @"SELECT tbs.name ,ds.value as comments ,tbs.xtype as  OBJECT_TYPE ,null as TEXT   
+FROM sysobjects tbs 
+LEFT JOIN sys.extended_properties ds ON ds.major_id=tbs.id and ds.minor_id=0 and ds.[name]='MS_Description'
+where tbs.xtype in ('U','V') and tbs.name=@TABLE_NAME";
+            DbHelper helper = new DbHelper(this._connectionString);
+            var data = helper.ListBySql(sql, new SqlParameter("@TABLE_NAME", table_name));
+            string objectType = (data.Rows[0]["OBJECT_TYPE"] + string.Empty).Trim();
+            SqlServerTableSchema oracleTable = new SqlServerTableSchema();
+            oracleTable.Name = table_name;
+            oracleTable.Comment = data.Rows[0]["COMMENTS"] + string.Empty;
+            oracleTable.ObjectType = objectType == "V" ? "VIEW" : "TABLE";
+            if (objectType == "V")
+            {
+                oracleTable.ViewScript = data.Rows[0]["TEXT"].ToString();
+            }
+            SetColumns(oracleTable);
+            SetForeignKey(oracleTable);
+            SetUniqueKey(oracleTable);
+            SetPrimaryKey(oracleTable);
+            return oracleTable;
         }
     }
 }

@@ -7,15 +7,12 @@ using CodeGenerator.Core.Interfaces;
 using System.Data;
 using MySql.Data.MySqlClient;
 using System.Text.RegularExpressions;
+using CodeGenerator.Core.Common;
 
 namespace CodeGenerator.Core.MySQLProvider
 {
     public class MySQLDataFactory : DataFactory
     {
-        /// <summary>
-        /// 读取外键key时是否加载外键引用表结构
-        /// </summary>
-        public bool ContainForeignTable { get; set; }
         public MySQLDataFactory(string connString) : base(connString)
         {
             ContainForeignTable = true;
@@ -64,16 +61,6 @@ namespace CodeGenerator.Core.MySQLProvider
                 return _db_name;
             }
         }
-        public override ITableSchema GetTableSchema(string table_name)
-        {
-            var db = GetDatabaseSchema();
-            MySQLTableSchema mysqlTable = (MySQLTableSchema)db.Tables.Find(it => it.Name.Equals(table_name));
-            SetColumns(mysqlTable);
-            SetForeignKey(mysqlTable);
-            SetUniqueKey(mysqlTable);
-            SetPrimaryKey(mysqlTable);
-            return mysqlTable;
-        }
         public override DataTable GetTableData(string table_name)
         {
             string sql = "SELECT * FROM " + table_name + " LIMIT 1000";
@@ -97,8 +84,8 @@ and tc.table_name=@table_name and tc.table_schema=@table_schema";
             key.Columns = new ColumnCollection();
             foreach (DataRow row in table.Rows)
             {
-                string column_name = row["COLUMN_NAME"] + string.Empty;
-                string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
+                string column_name = row.GetString("COLUMN_NAME");
+                string constraint_name = row.GetString("CONSTRAINT_NAME");
                 key.ConstraintName = constraint_name;
                 IColumn pkCol = oracleTable.Columns.Find(it => it.Name == column_name);
                 //pkCol.IsAutoIncrement = !string.IsNullOrEmpty(row["AUTO_INCREMENT"] + string.Empty);
@@ -120,8 +107,8 @@ and tc.table_name=kc.table_name and tc.table_name=@table_name and tc.table_schem
             oracleTable.UniqueKeys = new List<Common.UniqueKey>();
             foreach (DataRow row in table.Rows)
             {
-                string column_name = row["COLUMN_NAME"] + string.Empty;
-                string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
+                string column_name = row.GetString("COLUMN_NAME");
+                string constraint_name = row.GetString("CONSTRAINT_NAME");
                 Common.UniqueKey key = oracleTable.UniqueKeys.Find(it => it.ConstraintName == constraint_name);
                 if (key == null)
                 {
@@ -135,40 +122,42 @@ and tc.table_name=kc.table_name and tc.table_name=@table_name and tc.table_schem
 
         }
 
-        private void SetForeignKey(MySQLTableSchema oracleTable)
+        private void SetForeignKey(MySQLTableSchema mysqlTable)
         {
             string sql = @"select tc.table_name, tc.constraint_name,kc.column_name,kc.referenced_table_name,kc.referenced_table_schema,kc.referenced_column_name  
 from information_schema.table_constraints tc,information_schema.key_column_usage kc 
 where tc.constraint_type='FOREIGN KEY' and tc.constraint_name=kc.constraint_name 
 and tc.table_schema=kc.table_schema and tc.table_name=kc.table_name
 and tc.table_schema=@table_schema and tc.table_name=@table_name";
-            MySqlParameter para0 = new MySqlParameter("@table_name", oracleTable.Name);
+            MySqlParameter para0 = new MySqlParameter("@table_name", mysqlTable.Name);
             MySqlParameter para1 = new MySqlParameter("@table_schema", this.DatabaseName);
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql, para0, para1);
-            oracleTable.ForiegnKeys = new List<Common.ForeignKey>();
             foreach (DataRow row in table.Rows)
             {
-                Common.ForeignKey key = new Common.ForeignKey();
-                key.Columns = new ColumnCollection();
-                string column_name = row["COLUMN_NAME"] + string.Empty;
-                string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
-                key.ConstraintName = constraint_name;
-                key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
-                string foreignTable = row["referenced_table_name"] + string.Empty;
-                if (ContainForeignTable && key.ForeignTable == null && !string.IsNullOrEmpty(foreignTable))
+
+                string column_name = row.GetString("COLUMN_NAME");
+                var thisColumn = mysqlTable.Columns.Find(c => c.Name == column_name);
+                string constraint_name = row.GetString("CONSTRAINT_NAME");
+                ITableSchema foreignTable = null;
+                IColumn foreignColumn = null;
+                if (ContainForeignTable)
                 {
-                    string referenced_schema = row["referenced_table_schema"] + string.Empty;
+                    string referenced_schema = row.GetString("referenced_table_schema");
+                    string foreignTableName = row.GetString("referenced_table_name");
+                    string referencedColumnName = row.GetString("referenced_column_name");
                     var fac = new MySQLDataFactory(this._connectionString);
                     fac.ContainForeignTable = false;
                     fac._db_name = referenced_schema;
-                    key.ForeignTable = new ForeignTable(fac.GetTableSchema(foreignTable), row["referenced_column_name"] + string.Empty);
+                    foreignTable = fac.GetTableSchema(foreignTableName);
+                    foreignColumn = foreignTable.Columns.Find(c => c.Name.Equals(referencedColumnName, StringComparison.OrdinalIgnoreCase));
                 }
-                oracleTable.ForiegnKeys.Add(key);
+                var key = new ForeignKey(constraint_name, thisColumn, foreignTable, foreignColumn);
+                mysqlTable.ForeignKeys.Add(key);
             }
         }
 
-        private void SetColumns(MySQLTableSchema oracleTable)
+        private void SetColumns(MySQLTableSchema mysqlTable)
         {
             string sql = @"select column_name,data_type,
 character_maximum_length as data_length,
@@ -182,28 +171,39 @@ from information_schema.columns where table_schema=@target_schema and table_name
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql,
                 new MySqlParameter("@TARGET_SCHEMA", this.DatabaseName),
-                new MySqlParameter("@TARGET_TABLE", oracleTable.Name));
-            oracleTable.Columns = new ColumnCollection();
+                new MySqlParameter("@TARGET_TABLE", mysqlTable.Name));
+            mysqlTable.Columns = new ColumnCollection();
             foreach (DataRow row in table.Rows)
             {
                 int scale = row.GetInt("DATA_SCALE");
-                string data_type = row["DATA_TYPE"] + string.Empty;
-                MySQLColumn column = new MySQLColumn
+                string data_type = row.GetString("DATA_TYPE");
+                MySQLColumn column = new MySQLColumn(mysqlTable, this)
                 {
-                    Name = row["COLUMN_NAME"] + string.Empty,
-                    Comment = row["COMMENTS"] + string.Empty,
+                    Name = row.GetString("COLUMN_NAME"),
+                    Comment = row.GetString("COMMENTS"),
                     CsharpType = MySQLUtils.TransformDatabaseType(data_type, scale),
                     DbType = data_type,
-                    DefaultValue = row["DATA_DEFAULT"] + string.Empty,
-                    IsNullable = (row["NULLABLE"] + string.Empty) != "NO",
-                    Length = row.GetInt("DATA_LENGTH"),
+                    DefaultValue = row.GetString("DATA_DEFAULT"),
+                    IsNullable = row.GetString("NULLABLE") != "NO",
+                    Length = row.GetInt("DATA_LENGTH", "json".Equals(data_type, StringComparison.OrdinalIgnoreCase) ? 4000 : 0),
                     Scale = scale,
-                    Table = oracleTable,
+                    Table = mysqlTable,
                     IsNumeric = MySQLUtils.IsNumeric(data_type),
-                    IsAutoIncrement = Convert.ToInt32(row["auto_increment"]) == 1,
+                    IsAutoIncrement = row.GetInt("auto_increment") == 1,
                 };
-                oracleTable.Columns.Add(column);
+                mysqlTable.Columns.Add(column);
             }
+        }
+
+        public override ITableSchema GetTableSchema(string table_name)
+        {
+            var db = GetDatabaseSchema();
+            MySQLTableSchema mysqlTable = (MySQLTableSchema)db.Tables.Find(it => it.Name.Equals(table_name));
+            SetColumns(mysqlTable);
+            SetForeignKey(mysqlTable);
+            SetUniqueKey(mysqlTable);
+            SetPrimaryKey(mysqlTable);
+            return mysqlTable;
         }
     }
 }

@@ -27,10 +27,10 @@ namespace CodeGenerator.Core
 
             props.AddProperty(RuntimeConstants.FILE_RESOURCE_LOADER_PATH, templatePath);
             props.AddProperty(RuntimeConstants.INPUT_ENCODING, "utf-8");            
+            
             velocity.Init(props);
             //为模板变量赋值
-            context = new VelocityContext();
-
+            context = new VelocityContext();            
         }
 
         /// <summary>

@@ -1,33 +1,266 @@
-﻿ #set($oraValue=".Value")
- #set($refsuo=".Entities;")
+﻿#if($Table.ObjectType == "VIEW")
+#set($class_suffix="ViewEntity")
+#else
+#set($class_suffix="Entity")
+#end
  /***************************************************
  *
- * Data Access Layer Of Winner Framework
-#set($c=".generate.cs")
- * FileName : $Utils.ToPascalCase($Table.name)${c}
+ * Entity Model Of SqlSugar
+#set($c=".generated.cs")
+ * FileName : ${Table.GetClassName()}DAO${c}
  * CreateTime : ${Const.CurrentTime}
  * CodeGenerateVersion : ${Const.Version}
- * TemplateVersion: 1.0.0
- * E_Mail : zhj.pavel@gmail.com
+ * TemplateVersion: 2.0.0
+ * TemplateName: DataAccessObject For SqlSugar
+ * E_Mail : jason.geek@qq.com
  * Blog : 
- * Copyright (C) YXH
+ * Copyright (C) ZYS
  * 
  ***************************************************/
- #set($classname=$Utils.ToPascalCase($Table.name))
- namespace ${Const.Namespace}
- {
-	public partial class ${classname}
-	{
-		#region 属性
-#foreach($col in $Table.Columns)
-		/// <summary>
-		/// $StringUtil.Inline($col.Comment)
-		/// </summary>
-		public ${col.PrimativeTypeName} $Utils.ToPascalCase($col.Name)
+using System;
+using SqlSugar;
+using Jareds.Common;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+using ${Const.namespace.substring(0,$Const.namespace.lastIndexOf('.'))}.Entity;
+using ${Const.namespace.substring(0,$Const.namespace.lastIndexOf('.'))}.Enums;
+
+//DO NOT MODIFY PLEASE!!!!! this file was created by auto generated, if you want modify indeed please modify the template and regenerate this file
+//请不要尝试修改此文件！！！！这个文件是由代码生成器生成的。如果确实需要修改此文件，请修改模板后重新生成。
+namespace ${Const.namespace}
+{
+    /// <summary>
+    /// ${Table.Comment} ${Table.ObjectType}
+    /// </summary>
+    public partial class ${Table.GetClassName()}DAO : ${Table.GetClassName()}${class_suffix}
+    {
+        private IPagination pagination;
+        public IPagination Pagination(IPagination page) => this.pagination = page;
+        private readonly DbContext dbContext;
+        public ${Table.GetClassName()}DAO()
+        {
+            this.PropertyChanged += OnPropertyChanged;
+            this.dbContext = new DbContext();
+        }
+        /// <summary>
+        /// 必填字段构造器
+        /// </summary>
+        public ${Table.GetClassName()}DAO(${Table.GetMandatoryColumns().ToMethodParameters()}) : this()
+        {
+#foreach($col in $Table.GetMandatoryColumns())
+            this.$col.GetCamelCaseName() = $col.GetCamelCaseName(true);
+#end        
+        }                
+        public ${Table.GetClassName()}DAO(${Table.GetClassName()}${class_suffix} entity) : this()
+        {
+            Map(entity);
+        }
+        public static ${Table.GetClassName()}DAO From(${Table.GetClassName()}${class_suffix} entity)
+        {
+            return new ${Table.GetClassName()}DAO(entity);
+        }
+        private SqlSugarClient GetDb()
+        {
+            return dbContext.Db;
+        }
+        private ISugarQueryable<${Table.GetClassName()}DAO> Queryable()
+        {
+            return GetDb().Queryable<${Table.GetClassName()}DAO>();
+        }
+        /// <summary>
+        /// 主键查询，查不到数据则返回false
+        /// </Summary>
+#foreach($col in $Table.Primarykey.Columns)
+        /// <param name="${col.Name.ToLower()}">$Utils.Inline($col.Comment)</param>
+#end        
+        /// <returns>true represent query success, otherwise false</returns>
+		public bool GetById($Table.Primarykey.Columns.ToMethodParameters())
 		{
-			get;set;
+			var queryable = this.Queryable().Where(t =>#foreach($col in $Table.Primarykey.Columns) t.$col.GetCamelCaseName() == ${col.GetCamelCaseName(true)} #if(${velocityCount}!=$Table.Primarykey.Columns.Count())&&#end#end);
+            return First(queryable);
+		}    
+#if($Table.UniqueKeys.Count>0)
+#foreach($uk in $Table.UniqueKeys)
+        /// <summary>
+        /// 唯一键查询，查不到数据则返回false
+        /// </summary>
+#foreach($kcol in $uk.Columns)
+        /// <param name="${kcol.Name.ToLower()}">$Utils.Inline($kcol.Comment)</param>
+#end
+        /// <returns>true represent query success, otherwise false</returns>
+		public bool GetBy#foreach($kcol in $uk.Columns)$Utils.ToPascalCase($kcol.Name,false)#end(#foreach($col in $uk.Columns)$Utils.PropertyTypeFromComment($col.Comment,$col.PrimativeTypeName,$col.IsNullable) ${col.Name.ToLower()}#if(${velocityCount}!=$uk.Columns.Count()), #end#end)
+		{
+            var queryable = this.Queryable().Where(t => #foreach($col in $uk.Columns)t.$Utils.ToPascalCase($col.Name,false) == ${col.Name.ToLower()}#if(${velocityCount}!=$uk.Columns.Count()) && #end#end);
+            return First(queryable);
 		}
 #end
-		#endregion
-	}
- }
+#end
+//外键关联
+#if($Table.ForeignKeys.Count>0)
+#foreach($fk in $Table.ForeignKeys)
+        public ${fk.ForeignTable.GetClassName()}DAO Get${fk.ForeignTable.GetClassName()}()
+        {
+#if($fk.GetKeyColumn().IsNullable)
+#if($fk.GetKeyColumn().CsharpType.IsValueType)
+            if(!this.${fk.GetKeyColumn().GetCamelCaseName()}.HasValue)
+            {
+                return null;
+            }
+#else
+            if(string.IsNullOrEmpty(${fk.GetKeyColumn().GetCamelCaseName()}))
+            {
+                return null;
+            }
+#end
+#end
+
+            ${fk.ForeignTable.GetClassName()}DAO dao = new ${fk.ForeignTable.GetClassName()}DAO();
+            if(dao.GetById(${fk.GetKeyColumn().GetCamelCaseName()}#if($fk.GetKeyColumn().CsharpType.IsValueType && $fk.GetKeyColumn().IsNullable).Value#end))
+            {
+                return null;
+            }
+            return dao;
+        }
+#end
+#end
+        public List<${Table.GetClassName()}DAO> ListAll()
+        {
+            return ExecuteQuery(Queryable());
+        }
+        public bool Insert()
+        {
+            int eff = this.GetDb().Insertable(this).ExecuteCommand();
+            ResetChangeProperties();
+            return eff == 1;
+        }
+        /// <summary>
+        /// 更新实体到数据库，仅修改变更过的属性
+        /// </summary>
+        /// <returns></returns>        
+        public bool Update()
+        {
+            var updatable = this.GetDb().Updateable(this);
+            if (IsDirty())
+            {
+                updatable.UpdateColumns(changedProperties.ToArray());
+            }
+            int eff = updatable.ExecuteCommand();
+            ResetChangeProperties();
+            return eff == 1;
+        }
+        /// <summary>
+        /// 仅修改变更过的属性，指定where条件，where条件只能指定更新字段，不允许赋值，where条件值取自实体属性
+        /// <para><code>
+        /// UpdateBy(m=> new { m.AccountId, m.UserCode})
+        /// </code></para>
+        /// </summary>
+        /// <returns></returns>        
+        public bool UpdateBy(Expression<Func<${Table.GetClassName()}DAO, object>> where)
+        {
+            var updatable = this.GetDb().Updateable(this);
+            if(IsDirty())
+            {
+                updatable.UpdateColumns(changedProperties.ToArray());
+            }
+            int eff = updatable.WhereColumns(where).ExecuteCommand();
+            ResetChangeProperties();
+            return eff == 1;
+        }
+        public bool Delete()
+        {
+            int eff = this.GetDb().Deleteable(this).ExecuteCommand();
+            return eff == 1;
+        }
+        public bool DeleteById(#foreach($col in $Table.Primarykey.Columns)${col.primativetypename} ${col.Name.ToLower()}#if(${velocityCount}!=$Table.Primarykey.Columns.Count()),#end#end)
+        {
+            var res = this.GetDb().Deleteable<${Table.GetClassName()}${class_suffix}>().Where(t => #foreach($col in $Table.Primarykey.Columns)t.$Utils.ToPascalCase($col.Name,false) == ${col.Name.ToLower()}#if(${velocityCount}!=$Table.Primarykey.Columns.Count())&&#end#end).ExecuteCommand();
+            return res == 1;
+        }
+#if($Table.UniqueKeys.Count>0)
+#foreach($uk in $Table.UniqueKeys)
+        /// <summary>
+        /// 使用唯一键删除，删除数据影响行数等于一返回true，其他返回false。实际删除条数在out返回
+        /// </summary>
+#foreach($kcol in $uk.Columns)
+        /// <param name="${kcol.Name.ToLower()}">$Utils.Inline($kcol.Comment)</param>
+#end
+        /// <returns>true represent query success, otherwise false</returns>
+		public bool DeleteBy#foreach($kcol in $uk.Columns)$Utils.ToPascalCase($kcol.Name,false)#end(#foreach($col in $uk.Columns)$Utils.PropertyTypeFromComment($col.Comment,$col.PrimativeTypeName,$col.IsNullable) ${col.Name.ToLower()}, #end
+out int effectRows)
+		{
+            effectRows = this.GetDb().Deleteable<${Table.GetClassName()}${class_suffix}>().Where(t => #foreach($col in $uk.Columns)t.$Utils.ToPascalCase($col.Name,false) == ${col.Name.ToLower()}#if(${velocityCount}!=$uk.Columns.Count()) && #end#end).ExecuteCommand();
+            return effectRows == 1;
+		}
+#end		
+#end
+        private List<T> ExecuteQuery<T>(ISugarQueryable<T> queryable)
+        {
+            if (pagination == null)
+            {
+                return queryable.ToList();
+            }
+            int total = 0;
+            var result = queryable.ToPageList(pagination.CurrentPageIndex, pagination.PageSize, ref total);
+            this.pagination.Total = total;
+            return result;
+        }
+        private async Task<List<T>> ExecuteQueryAsync<T>(ISugarQueryable<T> queryable)
+        {
+            if (pagination == null)
+            {
+                return await queryable.ToListAsync();
+            }
+            RefAsync<int> total = 0;
+            var result = await queryable.ToPageListAsync(pagination.CurrentPageIndex, pagination.PageSize, total);
+            this.pagination.Total = total;
+            return result;
+        }
+        private async Task<bool> FirstAsync<T>(ISugarQueryable<T> queryable) where T : ${Table.GetClassName()}${class_suffix}
+        {
+            var t = await queryable.FirstAsync();
+            if (t == null)
+            {
+                return false;
+            }
+            Map(t);
+            return true;
+        }
+        private bool First<T>(ISugarQueryable<T> queryable) where T : ${Table.GetClassName()}${class_suffix}
+        {
+            var t = queryable.First();
+            if (t == null)
+            {
+                return false;
+            }
+            Map(t);
+            return true;
+        }
+        #region PropertyChangedNotification Implemention
+        private void Map(${Table.GetClassName()}${class_suffix} entity)
+        {
+            entity.CopyTo(this);
+            ResetChangeProperties();
+        }
+        private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (!changedProperties.Contains(e.PropertyName))
+            {
+                changedProperties.Add(e.PropertyName);
+            }
+        }
+
+        private readonly List<string> changedProperties = new List<string>();
+        private bool IsDirty()
+        {
+            return changedProperties.Count > 0;
+        }
+
+        private void ResetChangeProperties()
+        {
+            changedProperties.Clear();
+        }
+        #endregion
+    }
+}

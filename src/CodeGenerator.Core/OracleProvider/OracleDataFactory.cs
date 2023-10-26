@@ -1,8 +1,10 @@
-﻿using CodeGenerator.Core.Interfaces;
+﻿using CodeGenerator.Core.Common;
+using CodeGenerator.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.OracleClient;
+using System.Linq;
 
 namespace CodeGenerator.Core.OracleProvider
 {
@@ -37,31 +39,6 @@ WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') ORDER BY UO.OBJECT_NAME ASC";
             return db;
         }
 
-        public override ITableSchema GetTableSchema(string table_name)
-        {
-            string sql = @"SELECT UO.OBJECT_NAME AS TABLE_NAME,UO.OBJECT_TYPE,UC.COMMENTS,UV.TEXT FROM USER_OBJECTS UO 
-LEFT JOIN USER_TAB_COMMENTS UC ON UC.TABLE_NAME=UO.OBJECT_NAME 
-LEFT JOIN USER_VIEWS UV ON UV.VIEW_NAME=UO.OBJECT_NAME
-WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY UO.OBJECT_NAME ASC";
-            DbHelper helper = new DbHelper(this._connectionString);
-            //Console.WriteLine(this._connectionString);
-            var data = helper.ListBySql(sql, new OracleParameter("TABLE_NAME", table_name.ToUpper()));
-            //Console.WriteLine("查询数据条数：" + data.Rows.Count);
-            string objectType = data.Rows[0]["OBJECT_TYPE"] + string.Empty;
-            OracleTableSchema oracleTable = new OracleTableSchema();
-            oracleTable.Name = table_name;
-            oracleTable.Comment = data.Rows[0]["COMMENTS"] + string.Empty;
-            oracleTable.ObjectType = objectType;
-            if (objectType == "VIEW")
-            {
-                oracleTable.ViewScript = data.Rows[0]["TEXT"].ToString();
-            }
-            SetColumns(oracleTable);
-            SetForeignKey(oracleTable);
-            SetUniqueKey(oracleTable);
-            SetPrimaryKey(oracleTable);
-            return oracleTable;
-        }
         public override DataTable GetTableData(string table_name)
         {
             string sql = "SELECT * FROM " + table_name;
@@ -96,7 +73,7 @@ WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY
             {
                 int scale = Convert.ToInt32(row["DATA_SCALE"]);
                 string data_type = row["DATA_TYPE"] + string.Empty;
-                OracleColumn column = new OracleColumn
+                OracleColumn column = new OracleColumn(oracleTable, this)
                 {
                     Name = row["COLUMN_NAME"] + string.Empty,
                     Comment = row["COMMENTS"] + string.Empty,
@@ -133,25 +110,23 @@ WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql, para);
 
-            oracleTable.ForiegnKeys = new List<Common.ForeignKey>();
-
             foreach (DataRow row in table.Rows)
             {
                 string column_name = row["COLUMN_NAME"] + string.Empty;
+                var thisColumn = oracleTable.Columns.Find(c => c.Name == column_name);
                 string constraint_name = row["CONSTRAINT_NAME"] + string.Empty;
-
-                Common.ForeignKey key = new Common.ForeignKey();
-                key.Columns = new ColumnCollection();
-                key.ConstraintName = constraint_name;
-                if (key.ForeignTable == null && ContainForeignTable)
+                ITableSchema foreignTable = null;
+                IColumn foreignColumn = null;
+                if (ContainForeignTable)
                 {
-                    string forignTable = row["FOREIGN_TABLE_NAME"] + string.Empty;
+                    string foreignTableName = row["FOREIGN_TABLE_NAME"] + string.Empty;
                     var fac = new OracleDataFactory(this._connectionString);
                     fac.ContainForeignTable = false;
-                    key.ForeignTable = new ForeignTable(fac.GetTableSchema(forignTable), ""); //TODO: ORACLE FOREIGN KEY
+                    foreignTable = fac.GetTableSchema(foreignTableName);
+                    foreignColumn = foreignTable.PrimaryKey.Columns.FirstOrDefault();
                 }
-                key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
-                oracleTable.ForiegnKeys.Add(key);
+                var key = new ForeignKey(constraint_name, thisColumn, foreignTable, foreignColumn);
+                oracleTable.ForeignKeys.Add(key);
             }
         }
         private void SetUniqueKey(OracleTableSchema oracleTable)
@@ -211,8 +186,7 @@ WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY
             OracleParameter para = new OracleParameter("TABLE_NAME", oracleTable.Name.ToUpper());
             DbHelper helper = new DbHelper(this._connectionString);
             var table = helper.ListBySql(sql, para);
-            Common.PrimaryKey key = new Common.PrimaryKey();
-            key.Columns = new ColumnCollection();
+            PrimaryKey key = new PrimaryKey();
             foreach (DataRow row in table.Rows)
             {
                 string column_name = row["COLUMN_NAME"] + string.Empty;
@@ -221,6 +195,32 @@ WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY
                 key.Columns.Add(oracleTable.Columns.Find(it => it.Name == column_name));
             }
             oracleTable.PrimaryKey = key;
+        }
+
+        public override ITableSchema GetTableSchema(string table_name)
+        {
+            string sql = @"SELECT UO.OBJECT_NAME AS TABLE_NAME,UO.OBJECT_TYPE,UC.COMMENTS,UV.TEXT FROM USER_OBJECTS UO 
+LEFT JOIN USER_TAB_COMMENTS UC ON UC.TABLE_NAME=UO.OBJECT_NAME 
+LEFT JOIN USER_VIEWS UV ON UV.VIEW_NAME=UO.OBJECT_NAME
+WHERE UO.OBJECT_TYPE IN ('VIEW','TABLE') AND UO.OBJECT_NAME=:TABLE_NAME ORDER BY UO.OBJECT_NAME ASC";
+            DbHelper helper = new DbHelper(this._connectionString);
+            //Console.WriteLine(this._connectionString);
+            var data = helper.ListBySql(sql, new OracleParameter("TABLE_NAME", table_name.ToUpper()));
+            //Console.WriteLine("查询数据条数：" + data.Rows.Count);
+            string objectType = data.Rows[0]["OBJECT_TYPE"] + string.Empty;
+            OracleTableSchema oracleTable = new OracleTableSchema();
+            oracleTable.Name = table_name;
+            oracleTable.Comment = data.Rows[0]["COMMENTS"] + string.Empty;
+            oracleTable.ObjectType = objectType;
+            if (objectType == "VIEW")
+            {
+                oracleTable.ViewScript = data.Rows[0]["TEXT"].ToString();
+            }
+            SetColumns(oracleTable);
+            SetPrimaryKey(oracleTable);
+            SetForeignKey(oracleTable);
+            SetUniqueKey(oracleTable);
+            return oracleTable;
         }
     }
 }
