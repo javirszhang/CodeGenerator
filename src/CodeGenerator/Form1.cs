@@ -37,6 +37,9 @@ namespace CodeGenerator
             try
             {
                 string directory = AppDomain.CurrentDomain.BaseDirectory;
+#if DEBUG
+                directory = @"D:\git\CodeGenerator\";
+#endif
                 var repo = new Repository(directory);
                 var url = repo.Config.Get<string>("remote.origin.url");
                 UsernamePasswordCredentials credential = GetGitCredential(url?.Value);
